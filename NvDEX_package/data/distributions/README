@@ -1,0 +1,168 @@
+/////////////////////////////////////////////////////////
+// REST_v2 README file
+// File : data/distributions/README
+// Author : Gloria Luzon
+// Date : 2-Feb-2016
+/////////////////////////////////////////////////////////
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+File : NeutronSources.root
+Histograms : AmBe
+Description : It contains the energy distribution for Am241Be neutron emission (normalized) created using the ISO 8529-2 recommended 241Am-Be spectrum
+	-AmBe: Neutron spectrum in Mev
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+File : Tritium.root
+Histograms : h3
+Description : It contains the energy distribution for Tritium emission (normalized) created using the beta decay formula where nuclear effect have been neglected. N~ sqrte(E² +2*511*E)*(18.591-E)²*(E+511)
+	-h3 : Tritium decay spectrum in keV
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+File : CosmicGammas.root
+Histograms : hLEgamma, hMEgamma, hHEgamma
+
+Description : It contains three distributions (all of them normalized) corresponding to gammas at sea level (from tables in "Cosmic Rays at Earth" by Grieder (Ed. Elsevier)). Flux data from the same book and also from a comparative integral.
+
+  - hLEgamma : Low energy gammas distribution. From 1 to 10 MeV (bin size 100 keV).
+               Flux : 8e-3 cm-2 s-1 sr-1 (same for e- and e+)
+
+  - hMEgamma : Medium energy gammas distribution. From 10 to 100 MeV (bin size 100 keV).
+               Flux : 4e-3 cm-2 s-1 sr-1 (same for e- and e+)
+
+  - hHEgamma : Medium energy gammas distribution. From 0.1 to 100 GeV (bin size 100 MeV).
+               Flux : 1e-3 cm-2 s-1 sr-1 (same for e- and e+)
+
+Notes :
+    - Electrons (e-) and positrons (e+) should follow similar distributions.
+    - It is assumed that angular distributions should go with Cos^2.
+      The angular distribution can be found in file "CosmicAngles.root" and histogram "Theta2".
+---------------------------------------------------------------------------
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+File : CosmicNeutrons.root
+Histograms : CosmicNeutrons, HECosmicNeutrons
+
+Description: it contains two normalized distributions following Ziegler formula in IBM Journal of Research and Development, Volume 40, Issue 1, pp. 19-39 (1996) for medium and high energy cosmic neutrons
+
+    - CosmicNeutrons   : Medium energies from 10 to 1000 MeV --> bin size is 1 MeV
+                         Flux: values from 44 to 82 n/m2 s from different measurements, ~a few  1E-3 n/cm2 s
+
+    - HECosmicNeutrons : from 1 to 10 GeV --> bin size is 0.01 GeV
+                         Flux: ~0.1 n/m2 s infered from Ziegler)
+
+Notes:
+    - It is assumed that angular distributions should go with Cos^2
+      This distribution can be found in file "CosmicAngles.root" and histograms Theta, Theta2, Theta3.
+---------------------------------------------------------------------------
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+File : Muons.root
+Histograms : cosmicmuon, LSCmuon, CJULmuon
+
+Description: it contains sea level, Canfranc and CJUL underground site muon distributions (from tables in "Cosmic Rays at Earth" by Grieder (Ed. Elsevier)) 
+
+    -cosmicmuons : Sea Level from 0.2 to 328 GeV --> bin size is 1 MeV
+                   Flux: ~ 125 muons/m2 s
+                   angular distributions: Cos^2(theta)
+
+    -LSCmuon     : from 1 to 16410 GeV --> bin size 100 MeV
+                   Flux: ~ 5E-3 muons/m2 s
+                   angular distributions: Cos^3(theta)
+
+    -CJULmuon    : from 1 to 28708 GeV --> bin size 100 MeV
+                   Flux ~ 2.3E-6 muons/m2 s
+                   angular distributions: Cos^7(theta) ( = All vertical )
+---------------------------------------------------------------------------
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+File : RadioactivityNeutrons.root
+Histograms : EvaporationNeutrons
+
+Description: it contains a normalized distribution of the neutrons coming form radioactivity of nearby materials and walls
+
+    - EvaporationNeutrons : "Evaporation" spectra from 0 to 10 GeV --> bin size is 0.01 GeV
+                            LSC Flux ~ 3.82E-2 neutrons/m2 s
+                            The angle should be isotropic
+---------------------------------------------------------------------------
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+File : RadioactivityGammas.root
+Histograms : Th232, U238, ThetaAngle
+
+Description : Full chain decay simulation of Th232 and U238 launched uniformly inside a concrete wall. Then the gammas coming out the wall are counted and its energy filled inside the histograms Th232 and U238. 
+
+    - Th232 : Gamma energy spectrum resulting from Th232 decay chain (Energy units in keV).
+
+    - U238 : Gamma energy spectrum resulting from U238 decay chain (Energy units in keV).
+
+    - ThetaAngle : Resulting angular distribution from the gamma flux. Theta=0 is the direction normal to the surface.
+
+Notes : 
+    - The total number of counts inside the energy distributions corresponds to a simulation of 20M events in a concrete mass of 17664 tonnes.
+    - The phi angular distribution is uniform.
+
+---------------------------------------------------------------------------
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+File : CosmicAngles.root
+Histograms : Theta, Theta2, Theta3
+
+Description: It contains three angular distributions for cosmics arriving from zenit.
+
+    - Theta    :  following a Cos(theta) distribution
+
+    - Theta2   :  following a Cos^2(theta) distribution
+
+    - Theta3   :  following a Cos^3(theta) distribution
+---------------------------------------------------------------------------
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+File : HighEnergyGammaBiasing.root
+Histograms : Th232_Spectrum, Th232_Angular, U238_Spectrum, U238_Angular
+
+
+Description: This file contains the energy spectrum and angular distribution of the gammas biased through several biasing volumes inside a water tank.
+             The gammas are initially launched from the boundaries of a water tank of 12m side, using energy distributions Th232 and U238 given by RadiactivityGammas.root
+             The resulting biasing energy and angular spectra at a virtualBox of 2.5m side are registered in this file.
+
+    - Th232_Spectrum    :  Energy spectrum between 2.4MeV and 15MeV (Units in keV)
+
+    - U238_Spectrum     :  Energy spectrum between 2.4MeV and 15MeV (Units in keV)
+
+    - Th232_Angular     :  Theta angular distibution (Direction normal to the virtualBox walls).
+
+    - U238_Angular      :  Theta angular distibution (Direction normal to the virtualBox walls).
+
+Each of these spectra is given for different virtual box sizes (2500mm, 3000mm and 4000mm). 
+Thus Th232_Spectrum_2500 contains the gammas that reached the biasing volume at 2500mm.
+
+Note : These spectra have been generated using config/pandaXIII/biasing/external[Th232,U238].rml
+
+The biasing factors used to obtain the final biasing spectra at the 2.5m virtualBox are given in the following table
+    
+                        Vbox size  |  Th232  |  U238
+                        ----------------------------
+                         11.0 m    |   13.2  |  11.4
+                         10.0 m    |   11.8  |   7.9
+                          9.0 m    |   10.7  |   6.1
+                          8.0 m    |    9.4  |   5.3
+                          7.0 m    |    7.7  |   5.1
+                          6.0 m    |    6.5  |   5.2
+                          5.0 m    |    6.0  |   5.6
+                          4.0 m    |    6.4  |   6.3
+                          3.0 m    |    2.7  |   2.8
+                        ----------------------------
+                         Total     |  8.1E7  | 7.6E6 
+    
+    
+
+
+---------------------------------------------------------------------------

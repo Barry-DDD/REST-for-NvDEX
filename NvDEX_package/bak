@@ -1,0 +1,23 @@
+{
+    "protocol": "sftp",
+    "host": "bl-1-1.physics.sjtu.edu.cn",
+    "port": 22,
+    "user": "litao",
+    "pass": "123456xq",
+    "promptForPass": false,
+    "remote": "/home/litao/mebius/KalmanBayes/test/Diffusion/",
+    "local": "",
+    "agent": "",
+    "privatekey": "",
+    "passphrase": "",
+    "hosthash": "",
+    "ignorehost": true,
+    "connTimeout": 10000,
+    "keepalive": 10000,
+    "keyboardInteractive": false,
+    "keyboardInteractiveForPass": false,
+    "remoteCommand": "",
+    "remoteShell": "",
+    "watch": [],
+    "watchTimeout": 500
+}
