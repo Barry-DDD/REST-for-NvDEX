@@ -1,0 +1,186 @@
+<!-- densities in g/cm3 @ 293.15K -->
+    <materials>
+
+        <!-- {{{ Elements definition -->
+        <element name="Hydrogen" formula="H" Z="1">
+            <atom value="1.00794" />
+        </element>
+        <element name="Carbon" formula="C" Z="6">
+            <atom value="12.0107" />
+        </element>
+        <element name="Nitrogen" formula="N" Z="7">
+            <atom value="14.0067" />
+        </element>
+        <element name="Fluor" formula="F" Z="9">
+            <atom value="18.9984" />
+        </element>
+        <element name="Aluminium" formula="Al" Z="13" state="solid">
+            <atom value="26.9815384" />
+        </element>
+        <element name="Silicon" formula="Si" Z="14" state="solid">
+            <atom value="28.0855" />
+        </element>
+        <element name="Chromium" formula="Cr" Z="24" state="solid">
+            <atom value="51.996" />
+        </element>
+        <element name="Manganese" formula="Mn" Z="25">
+            <atom value="54.938045" />
+        </element>
+        <element name="Iron" formula="Fe" Z="26" state="solid">
+            <atom value="55.845" />
+        </element>
+        <element name="Nickel" formula="Ni" Z="28" state="solid">
+            <atom value="58.6934" />
+        </element>
+        <element name="Ruthenium" formula="Ru" Z="44" state="solid">
+            <atom value="101.07" />
+        </element>
+        <element name="Xenon" formula="Xe" Z="54" state="gas">
+            <atom value="131.293" />
+        </element>
+        <element name="Argon" formula="Ar" Z="18" state="gas">
+            <atom value="39.948" />
+        </element>
+        <element name="Neon" formula="Ar" Z="10" state="gas">
+            <atom value="20.1797" />
+        </element>
+        <element name="Selenium" formula="Se" Z="34" state="solid">
+            <atom value="78.971" />
+        </element>
+
+
+    <!-- {{{ Air -->
+        <isotope N="14" Z="7" name="N14">
+            <atom unit="g/mole" value="14.0031"/>
+        </isotope>
+        <isotope N="15" Z="7" name="N15">
+            <atom unit="g/mole" value="15.0001"/>
+        </isotope>
+        <element name="Nitrogen">
+            <fraction n="0.99632" ref="N14"/>
+            <fraction n="0.00368" ref="N15"/>
+        </element>
+
+        <isotope N="16" Z="8" name="O16">
+            <atom unit="g/mole" value="15.9949"/>
+        </isotope>
+        <isotope N="17" Z="8" name="O17">
+            <atom unit="g/mole" value="16.9991"/>
+        </isotope>
+        <isotope N="18" Z="8" name="O18">
+            <atom unit="g/mole" value="17.9992"/>
+        </isotope>
+        <element name="Oxygen">
+            <fraction n="0.99757" ref="O16"/>
+            <fraction n="0.00038" ref="O17"/>
+            <fraction n="0.00205" ref="O18"/>
+        </element>
+        <material name="Air" state="gas">
+            <T unit="K" value="293.13"/>
+            <MEE unit="eV" value="85.7030667332999"/>
+            <D unit="g/cm3" value="0.00129"/>
+            <fraction n="0.7" ref="Nitrogen"/>
+            <fraction n="0.3" ref="Oxygen"/>
+        </material>
+        <!-- }}} -->
+
+
+        <material name="Galactic" state="gas">
+            <D unit="g/cm3" value="3.0e-23" />
+            <T unit="K" value="2.73" />
+            <P unit="bar" value="3.0e-23" />
+            <composite n="2" ref="Carbon" />
+            <composite n="4" ref="Hydrogen" />
+        </material>
+
+        <material name="HDPEMaterial" state="solid">
+            <D unit="g/cm3" value="0.946" />
+            <composite n="2" ref="Carbon" />
+            <composite n="4" ref="Hydrogen" />
+        </material>
+
+        <material name="POM" state="solid">
+            <D unit="g/cm3" value="1.41" />
+            <composite n="1" ref="Carbon" />
+            <composite n="2" ref="Hydrogen" />
+            <composite n="1" ref="Oxygen" />
+        </material>
+
+        <material name="SeF6" state="gas">
+            <D unit="g/cm3" value="0.08467" />
+            <T unit="K" value="293.15" />
+            <P unit="bar" value="10*1.01325" />
+            <composite n="1" ref="Selenium" />
+            <composite n="6" ref="Fluor" />
+        </material>
+
+
+        <!-- {{{ Copper -->
+        <isotope N="63" Z="29" name="Cu63">
+            <atom unit="g/mole" value="62.9296"/>
+        </isotope>
+        <isotope N="65" Z="29" name="Cu65">
+            <atom unit="g/mole" value="64.9278"/>
+        </isotope>
+        <element name="Cu">
+            <fraction n="0.6917" ref="Cu63"/>
+            <fraction n="0.3083" ref="Cu65"/>
+        </element>
+        <material name="Copper" state="solid">
+            <MEE unit="eV" value="322"/>
+            <D unit="g/cm3" value="8.96"/>
+            <fraction n="1" ref="Cu"/>
+        </material>
+        <!-- }}} -->
+
+
+        <!-- {{{ Stainlesssteel -->
+        <material name="Stainlesssteel" state="solid">
+            <MEE unit="eV" value="280.927567486627"/>
+            <D unit="g/cm3" value="8.02"/>
+            <fraction n="0.02" ref="Manganese"/>
+            <fraction n="0.01" ref="Silicon"/>
+            <fraction n="0.19" ref="Chromium"/>
+            <fraction n="0.1" ref="Nickel"/>
+            <fraction n="0.68" ref="Iron"/>
+        </material>
+        <!-- }}} -->
+
+
+        <!-- {{{ Lead -->
+        <isotope N="204" Z="82" name="Pb204">
+            <atom unit="g/mole" value="203.973"/>
+        </isotope>
+        <isotope N="206" Z="82" name="Pb206">
+            <atom unit="g/mole" value="205.974"/>
+        </isotope>
+        <isotope N="207" Z="82" name="Pb207">
+            <atom unit="g/mole" value="206.976"/>
+        </isotope>
+        <isotope N="208" Z="82" name="Pb208">
+            <atom unit="g/mole" value="207.977"/>
+        </isotope>
+        <element name="Pb">
+            <fraction n="0.014" ref="Pb204"/>
+            <fraction n="0.241" ref="Pb206"/>
+            <fraction n="0.221" ref="Pb207"/>
+            <fraction n="0.524" ref="Pb208"/>
+        </element>
+        <material name="Lead" state="solid">
+            <MEE unit="eV" value="823"/>
+            <D unit="g/cm3" value="11.34"/>
+            <fraction n="1" ref="Pb"/>
+        </material>
+        <!-- }}} -->
+
+        <!-- High-density polyethylene -->
+        <material name="HDPE" state="solid">
+            <MEE unit="eV" value="1"/> <!-- Don't know -->
+            <D unit="g/cm3" value="0.958" /> <!-- Not Sure -->
+            <composite n="2" ref="Carbon" />
+            <composite n="4" ref="Hydrogen" />
+        </material>
+        <!-- }}} -->
+
+
+    </materials>

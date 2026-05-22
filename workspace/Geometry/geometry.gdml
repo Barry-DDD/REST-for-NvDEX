@@ -1,0 +1,301 @@
+
+<!-- Wall -->
+<box name="Outerwall" x="2*expHallOutLx" y="2*expHallOutLy" z="2*expHallOutLz" lunit="cm" />
+<box name="HDPEOuterBox" x="2*HDPEShieldingXOuter" y="2*HDPEShieldingYOuter" z="2*HDPEShieldingZOuter" lunit="cm" />
+
+<subtraction name="Wall">
+    <first ref="Outerwall"/>
+    <second ref="HDPEOuterBox"/>
+</subtraction>
+
+<!-- Gas -->
+<tube name="fSolidAbsorber" startphi="PhiminDet" deltaphi="deltaPhiDet" rmin="RminDet" rmax="RmaxDet" z="2*deltaZDet" aunit="deg" lunit="cm" />
+
+<!-- HDPE Shield -->
+<box name="LeadOuterBox" x="2*LeadShieldXOuter" y="2*LeadShieldYOuter" z="2*LeadShieldZOuter" lunit="cm" />
+<box name="LeadInnerBox" x="2*LeadShieldXInner" y="2*LeadShieldYInner" z="2*LeadShieldZInner" lunit="cm" />
+
+<subtraction name="HDPE_subtraction">
+    <first ref="HDPEOuterBox"/>
+    <second ref="LeadOuterBox"/>
+</subtraction>
+
+
+<!-- Lead Shield -->
+<subtraction name="Lead_subtraction">
+    <first ref="LeadOuterBox"/>
+    <second ref="LeadInnerBox"/>
+</subtraction>
+
+<!-- ICS Shield -->
+<tube name="ICSOuterTubs" startphi="0" deltaphi="360" rmin="0" rmax="CuShieldOuterRadius" z="2*CuShieldHalfLength" aunit="deg" lunit="cm" />
+<tube name="fsolidHDPEext" startphi="0" deltaphi="360" rmin="0" rmax="48" z="2*(deltaZDet+ThicknessHDPE)" aunit="deg" lunit="cm" />
+<subtraction name="ICS_subtraction">
+    <first ref="ICSOuterTubs"/>
+    <second ref="fsolidHDPEext"/> 
+</subtraction>
+
+
+<!-- SSV Shield -->
+    <!-- Barrel -->
+<tube name="OuterSSVesselBody" startphi="0" deltaphi="360" rmin="0" rmax="vesselOuterRadius" z="2*cylinderHalfLengthOuter" aunit="deg" lunit="cm" />
+<tube name="InnerSSVesselBody" startphi="0" deltaphi="360" rmin="0" rmax="SSVInnerRadius" z="2*SSVHalfLengthInner" aunit="deg" lunit="cm" />
+
+    <!-- EndCups -->
+<sphere name = "solidEndCapOuterSphere" rmin="EndCapsInnerRadius" rmax="EndCapsOuterRadius" deltaphi="360" deltatheta="57.087" aunit="deg" lunit= "cm"/>
+
+<sphere name = "solidEndCapInnerSphere" rmin="EndCapsInnerRadius" rmax="EndCapsOuterRadius" deltaphi="360" deltatheta="57.087" aunit="deg" lunit= "cm"/>
+
+
+    <!-- Unions of Barrel + EndCaps -->
+<union name="OuterSSV_BodyPlusEndCapsPart1" >
+  <first ref="OuterSSVesselBody" />
+  <second ref="solidEndCapOuterSphere" />
+  <position name="Position3" unit="cm" x="0" y="0" z="EndCapsShiftZ" />
+  <rotation name="Rotation1" unit="deg" x="0" y="180" z="0" aunit="deg" />
+</union>
+
+<union name="OuterSSV_BodyPlusEndCaps" >
+  <first ref="OuterSSV_BodyPlusEndCapsPart1" />
+  <second ref="solidEndCapOuterSphere" />
+  <position name="Position4" unit="cm" x="0" y="0" z="-EndCapsShiftZ" />
+</union>
+
+<union name="InnerSSV_BodyPlusEndCapsPart1" >
+  <first ref="OuterSSVesselBody" />
+  <second ref="solidEndCapInnerSphere" />
+  <position name="Position5" unit="cm" x="0" y="0" z="EndCapsShiftZ" />
+  <rotation name="Rotation2" unit="deg" x="0" y="180" z="0" aunit="deg" />
+</union>
+
+<union name="InnerSSV_BodyPlusEndCaps" >
+  <first ref="InnerSSV_BodyPlusEndCapsPart1" />
+  <second ref="solidEndCapOuterSphere" />
+  <position name="Position6" unit="cm" x="0" y="0" z="-EndCapsShiftZ" />
+</union>
+
+<subtraction name="InnerSSV_Subtraction">
+    <first ref="InnerSSV_BodyPlusEndCaps"/>
+    <second ref="ICSOuterTubs"/> 
+</subtraction>
+
+<subtraction name="SSV_subtraction">
+    <first ref="OuterSSV_BodyPlusEndCaps"/>
+    <second ref="InnerSSV_BodyPlusEndCaps"/> 
+</subtraction>
+
+
+
+<!-- Pipes-->
+    <!-- Full Pipes-->
+<tube name="CentralPipeFull" startphi="0" deltaphi="360" rmin="RadiusLargeFullPipeMin" rmax="RadiusLargePipeMax" z="2*LengthFullPipesFunction" aunit="deg" lunit="cm" />
+<tube name="MediumPipeFull" startphi="0" deltaphi="360" rmin="RadiusMediumFullPipeMin" rmax="RadiusMediumPipeMax" z="2*LengthFullPipesFunction" aunit="deg" lunit="cm" />
+<tube name="SmallPipeFull" startphi="0" deltaphi="360" rmin="RadiusSmallFullPipeMin" rmax="RadiusSmallPipeMax" z="2*LengthFullPipesFunction" aunit="deg" lunit="cm" />
+
+<union name="PipesFullPart1" >
+  <first ref="CentralPipeFull" />
+  <second ref="MediumPipeFull" />
+  <position name="Position7" unit="cm" x="ShiftMediumPipeX" y="ShiftMediumPipeY" z="0" />
+</union>
+
+<union name="PipesFullPart2" >
+  <first ref="PipesFullPart1" />
+  <second ref="MediumPipeFull" />
+  <position name="Position8" unit="cm" x="ShiftMediumPipeX" y="-ShiftMediumPipeY" z="0" />
+</union>
+
+<union name="PipesFullPart3" >
+  <first ref="PipesFullPart2" />
+  <second ref="MediumPipeFull" />
+  <position name="Position9" unit="cm" x="-ShiftMediumPipeX" y="ShiftMediumPipeY" z="0" />
+</union>
+
+<union name="PipesFullPart4" >
+  <first ref="PipesFullPart3" />
+  <second ref="MediumPipeFull" />
+  <position name="Position10" unit="cm" x="-ShiftMediumPipeX" y="-ShiftMediumPipeY" z="0" />
+</union>
+
+<union name="PipesFullPart5" >
+  <first ref="PipesFullPart4" />
+  <second ref="SmallPipeFull" />
+  <position name="Position11" unit="cm" x="ShiftSmallPipeX" y="0" z="0" />
+</union>
+
+<union name="PipesFull" >
+  <first ref="PipesFullPart5" />
+  <second ref="SmallPipeFull" />
+  <position name="Position12" unit="cm" x="-ShiftSmallPipeX" y="0" z="0" />
+</union>
+
+
+
+
+ <!-- Empty Pipes-->
+<tube name="CentralPipeEmpty" startphi="0" deltaphi="360" rmin="RadiusLargeEmptyPipeMin" rmax="RadiusLargePipeMax" z="2*LengthEmptyPipesFunction" aunit="deg" lunit="cm" />
+<tube name="MediumPipeEmpty" startphi="0" deltaphi="360" rmin="RadiusMediumEmptyPipeMin" rmax="RadiusMediumPipeMax" z="2*LengthEmptyPipesFunction" aunit="deg" lunit="cm" />
+<tube name="SmallPipeEmpty" startphi="0" deltaphi="360" rmin="RadiusSmallEmptyPipeMin" rmax="RadiusSmallPipeMax" z="2*LengthEmptyPipesFunction" aunit="deg" lunit="cm" />
+
+<union name="PipesEmptyPart1" >
+  <first ref="CentralPipeEmpty" />
+  <second ref="MediumPipeEmpty" />
+  <position name="Position13" unit="cm" x="ShiftMediumPipeX" y="ShiftMediumPipeY" z="0" />
+</union>
+
+<union name="PipesEmptyPart2" >
+  <first ref="PipesEmptyPart1" />
+  <second ref="MediumPipeEmpty" />
+  <position name="Position14" unit="cm" x="ShiftMediumPipeX" y="-ShiftMediumPipeY" z="0" />
+</union>
+
+<union name="PipesEmptyPart3" >
+  <first ref="PipesEmptyPart2" />
+  <second ref="MediumPipeEmpty" />
+  <position name="Position15" unit="cm" x="-ShiftMediumPipeX" y="ShiftMediumPipeY" z="0" />
+</union>
+
+<union name="PipesEmptyPart4" >
+  <first ref="PipesEmptyPart3" />
+  <second ref="MediumPipeEmpty" />
+  <position name="Position16" unit="cm" x="-ShiftMediumPipeX" y="-ShiftMediumPipeY" z="0" />
+</union>
+
+<union name="PipesEmptyPart5" >
+  <first ref="PipesEmptyPart4" />
+  <second ref="SmallPipeEmpty" />
+  <position name="Position17" unit="cm" x="ShiftSmallPipeX" y="0" z="0" />
+</union>
+
+<union name="PipesEmpty" >
+  <first ref="PipesEmptyPart5" />
+  <second ref="SmallPipeEmpty" />
+  <position name="Position18" unit="cm" x="-ShiftSmallPipeX" y="0" z="0" />
+</union>
+
+
+<subtraction name="PipesCutTmp">
+    <first ref="PipesEmpty"/>
+    <second ref="OuterSSV_BodyPlusEndCaps"/>
+</subtraction>
+
+
+
+
+
+<!--Holder-->
+<box name="VerticalHandle" x="2*HalfLengthVHandleX" y="2*HalfLengthVHandleY" z="2*HalfLengthVHandleZ" lunit="cm" />
+<box name="OuterBase" x="2*BaseOuterX" y="2*BaseOuterY" z="2*BaseOuterZ" lunit="cm" />
+<box name="InnerBase" x="2*BaseInnerX" y="2*BaseInnerY" z="2*BaseInnerZ" lunit="cm" />
+
+<subtraction name="BaseSubtraction">
+    <first ref="OuterBase"/>
+    <second ref="InnerBase"/>
+</subtraction>
+
+<trd name="DiagonalHandleOut" lunit="cm" x1="2.0*HalfLengtDiagHolderOutXmax" x2="2.0*HalfLengtDiagHolderOutXmin" y1="2*HalfLengtDiagHolderOutY" y2="2*HalfLengtDiagHolderOutY" z="HalfLengtDiagHolderOutZ"/>
+
+<trd name="DiagonalHandleInn" lunit="cm" x1="2.0*HalfLengtDiagHolderInnXmax" x2="2.0*HalfLengtDiagHolderInnXmin" y1="2*HalfLengtDiagHolderInnY" y2="2*HalfLengtDiagHolderInnY" z="HalfLengtDiagHolderInnZ"/>
+
+<subtraction name="DiagHandleSubtraction">
+    <first ref="DiagonalHandleOut"/>
+    <second ref="DiagonalHandleInn"/>
+    <position name="Position21" unit="cm" x="0" y="0" z="DiagHandleShiftZ" />
+</subtraction>
+
+<union name="HolderCreatedPart1" >
+  <first ref="BaseSubtraction" />
+  <second ref="VerticalHandle" />
+  <position name="Position22" unit="cm" x="shiftVHandleX" y="shiftVHandleY" z="0" />
+</union>
+
+<union name="HolderCreatedPart2" >
+  <first ref="HolderCreatedPart1" />
+  <second ref="VerticalHandle" />
+  <position name="Position23" unit="cm" x="shiftVHandleX" y="-shiftVHandleY" z="0" />
+</union>
+
+<union name="HolderCreatedPart3" >
+  <first ref="HolderCreatedPart2" />
+  <second ref="DiagHandleSubtraction" />
+  <position name="Position24" unit="cm" x="DiagHandleShiftPosX" y="shiftVHandleY" z="0" />
+  <rotation name="DiagHandleSubtractionRotation" unit="deg" x="0" y="90" z="0" aunit="deg" />
+</union>
+
+<union name="HolderCreated" >
+  <first ref="HolderCreatedPart3" />
+  <second ref="DiagHandleSubtraction" />
+  <position name="Position25" unit="cm" x="DiagHandleShiftPosX" y="-shiftVHandleY" z="0" />
+  <rotation name="DiagHandleSubtractionRotation" unit="deg" x="0" y="90" z="0" aunit="deg" />
+</union>
+
+
+
+<!-- HDPE Fillings -->
+<tube name="HDPEFillCentralInner" startphi="0" deltaphi="360" rmin="0" rmax="CylHDPEFillInnerR" z="2*CylHDPEFillInnerL" aunit="deg" lunit="cm" />
+
+<subtraction name="HDPEInnerShield_subtractionTmp1">
+    <first ref="LeadInnerBox"/>
+    <second ref="PipesFull"/>
+    <position name="Position26" unit="cm" x="-centerLeadX" y="-centerLeadY" z="-centerLeadZ" />
+</subtraction>
+
+<subtraction name="HDPEInnerShield_subtractionTmp2">
+    <first ref="HDPEInnerShield_subtractionTmp1"/>
+    <second ref="HolderCreated"/>
+    <position name="Position27" unit="cm" x="shiftBaseX-centerLeadX" y="shiftBaseY" z="-shiftBaseZ" />
+</subtraction>
+
+<subtraction name="HDPEInnerShield_subtractionTmp3">
+    <first ref="HDPEInnerShield_subtractionTmp2"/>
+    <second ref="HolderCreated"/>
+    <position name="Position28" unit="cm" x="shiftBaseX-centerLeadX" y="shiftBaseY" z="shiftBaseZ" />
+</subtraction>
+
+<subtraction name="HDPEFillCentral_subtraction1">
+    <first ref="HDPEInnerShield_subtractionTmp3"/>
+    <second ref="HDPEFillCentralInner"/>
+    <position name="Position29" unit="cm" x="-centerLeadX" y="-centerLeadY" z="-centerLeadZ" />
+</subtraction>
+
+
+<tube name="FlangesCuttmp" startphi="0" deltaphi="360" rmin="0" rmax="flangesOuterRadius" z="2*(1.1*flangesHalfLength+flangeShift)" aunit="deg" lunit="cm" />
+
+<subtraction name="HDPEFillCentral_subtraction">
+    <first ref="HDPEFillCentral_subtraction1"/>
+    <second ref="FlangesCuttmp"/>
+    <position name="Position30" unit="cm" x="-centerLeadX" y="-centerLeadY" z="-centerLeadZ" />
+</subtraction>
+
+
+
+
+<subtraction name="fSolidPOM">
+    <first ref="fsolidHDPEext"/>
+    <second ref="fSolidAbsorber"/> 
+</subtraction>
+
+
+
+<!-- Flanges -->
+<tube name="FlangeOuter" startphi="0" deltaphi="360" rmin="0" rmax="flangesOuterRadius" z="2*flangesHalfLength" aunit="deg" lunit="cm" />
+<tube name="FlangeInner" startphi="0" deltaphi="360" rmin="0" rmax="flangesInnerRadius" z="1.1*2*flangesHalfLength" aunit="deg" lunit="cm" />
+
+<subtraction name="Flange_subtraction">
+    <first ref="FlangeOuter"/>
+    <second ref="FlangeInner"/> 
+</subtraction>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

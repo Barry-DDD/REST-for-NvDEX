@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+
+<TRestManager verboseLevel="silent">
+  <globals>
+    <parameter name="outputFileName" value="NvDEX_Xe136_8mm.root" />
+    <searchPath value="${REST_INPUTDATA}/definitions/"/>
+    <variable name="pixelLength" value="12/sqrt(3)" overwrite="false" />
+    <variable name="CHANNELS" value="16" overwrite="false" />
+    <variable name="MODULES" value="1" overwrite="false" />
+  </globals>
+
+  <TRestRun name="readoutrun">
+    
+    <TRestReadout name="pixelReadout" title="a basic pixelReadout">
+        <constant name="nChannels" value="${CHANNELS}" />
+        <constant name="pixelsize" value="${pixelLength}"/>
+        <constant name="nModules" value="${MODULES}" />
+        <parameter name="mappingNodes" value="0" />
+        <constant name="myDecodingFile" value="/home/rest/rest_workspace/TEST/decodingfile.dec"/>
+
+        <readoutModule name="module" size="(186,282*sqrt(3)/3)" tolerance="1.e-4">
+        <for variable="ch0" from="0" to="15" step="1">
+              <readoutChannel id="${ch0}">
+                <addPixel id="0"  origin="(${ch0}*12+12, 0)" size="(pixelsize,pixelsize)"  rotation="90" />
+              </readoutChannel> 
+        </for> 
+        <for variable="ch1" from="0" to="15" step="1">
+              <readoutChannel id="${ch1}+16">
+                <addPixel id="0"  origin="(${ch1}*12+6, 6*sqrt(3))" size="(pixelsize,pixelsize)"  rotation="90" />
+              </readoutChannel> 
+        </for> 
+        <for variable="ch2" from="0" to="15" step="1">
+              <readoutChannel id="${ch2}+32">
+                <addPixel id="0"  origin="(${ch2}*12+12, 12*sqrt(3))" size="(pixelsize,pixelsize)"  rotation="90" />
+              </readoutChannel> 
+        </for> 
+        <for variable="ch3" from="0" to="15" step="1">
+              <readoutChannel id="${ch3}+48">
+                <addPixel id="0"  origin="(${ch3}*12+6, 18*sqrt(3))" size="(pixelsize,pixelsize)"  rotation="90" />
+              </readoutChannel> 
+        </for> 
+        <for variable="ch4" from="0" to="15" step="1">
+              <readoutChannel id="${ch4}+64">
+                <addPixel id="0"  origin="(${ch4}*12+12, 24*sqrt(3))" size="(pixelsize,pixelsize)"  rotation="90" />
+              </readoutChannel> 
+        </for> 
+        <for variable="ch5" from="0" to="15" step="1">
+              <readoutChannel id="${ch5}+80">
+                <addPixel id="0"  origin="(${ch5}*12+6, 30*sqrt(3))" size="(pixelsize,pixelsize)"  rotation="90" />
+              </readoutChannel> 
+        </for> 
+        <for variable="ch6" from="0" to="15" step="1">
+              <readoutChannel id="${ch6}+96">
+                <addPixel id="0"  origin="(${ch6}*12+12, 36*sqrt(3))" size="(pixelsize,pixelsize)"  rotation="90" />
+              </readoutChannel> 
+        </for> 
+        <for variable="ch7" from="0" to="15" step="1">
+              <readoutChannel id="${ch7}+112">
+                <addPixel id="0"  origin="(${ch7}*12+6, 42*sqrt(3))" size="(pixelsize,pixelsize)"  rotation="90" />
+              </readoutChannel> 
+        </for> 
+        <for variable="ch8" from="0" to="15" step="1">
+              <readoutChannel id="${ch8}+128">
+                <addPixel id="0"  origin="(${ch8}*12+12, 48*sqrt(3))" size="(pixelsize,pixelsize)"  rotation="90" />
+              </readoutChannel> 
+        </for> 
+        <for variable="ch9" from="0" to="15" step="1">
+              <readoutChannel id="${ch9}+144">
+                <addPixel id="0"  origin="(${ch9}*12+6, 54*sqrt(3))" size="(pixelsize,pixelsize)"  rotation="90" />
+              </readoutChannel> 
+        </for> 
+        <for variable="ch10" from="0" to="15" step="1">
+              <readoutChannel id="${ch10}+160">
+                <addPixel id="0"  origin="(${ch10}*12+12, 60*sqrt(3))" size="(pixelsize,pixelsize)"  rotation="90" />
+              </readoutChannel> 
+        </for> 
+        <for variable="ch11" from="0" to="15" step="1">
+              <readoutChannel id="${ch11}+176">
+                <addPixel id="0"  origin="(${ch11}*12+6, 66*sqrt(3))" size="(pixelsize,pixelsize)"  rotation="90" />
+              </readoutChannel> 
+        </for> 
+        <for variable="ch12" from="0" to="15" step="1">
+              <readoutChannel id="${ch12}+192">
+                <addPixel id="0"  origin="(${ch12}*12+12, 72*sqrt(3))" size="(pixelsize,pixelsize)"  rotation="90" />
+              </readoutChannel> 
+        </for> 
+        <for variable="ch13" from="0" to="15" step="1">
+              <readoutChannel id="${ch13}+208">
+                <addPixel id="0"  origin="(${ch13}*12+6, 78*sqrt(3))" size="(pixelsize,pixelsize)"  rotation="90" />
+              </readoutChannel> 
+        </for> 
+        <for variable="ch14" from="0" to="15" step="1">
+              <readoutChannel id="${ch14}+224">
+                <addPixel id="0"  origin="(${ch14}*12+12, 84*sqrt(3))" size="(pixelsize,pixelsize)"  rotation="90" />
+              </readoutChannel> 
+        </for> 
+        <for variable="ch15" from="0" to="15" step="1">
+              <readoutChannel id="${ch15}+240">
+                <addPixel id="0"  origin="(${ch15}*12+6, 90*sqrt(3))" size="(pixelsize,pixelsize)"  rotation="90" />
+              </readoutChannel> 
+        </for> 
+        </readoutModule>
+
+        <readoutPlane position="(0,0,845)" units="mm" planeVector="(0,0,-1)" chargeCollection="1" cathodePosition="(0,0,-845)">
+        <for variable="modX" from="0" to="3" step="1" >
+            <addReadoutModule id="${modX}" name="module"
+                origin="(-558,${modX}*282*sqrt(3)/3-2*282*sqrt(3)/3)"
+                rotation="0" />
+          </for>
+        <for variable="modX" from="4" to="9" step="1" >
+            <addReadoutModule id="${modX}" name="module"
+                origin="(-372,(${modX}-4)*282*sqrt(3)/3-3*282*sqrt(3)/3)"
+                rotation="0" />
+          </for>
+        <for variable="modX" from="10" to="15" step="1" >
+            <addReadoutModule id="${modX}" name="module"
+                origin="(-186,(${modX}-10)*282*sqrt(3)/3-3*282*sqrt(3)/3)"
+                rotation="0" />
+          </for>
+        <for variable="modX" from="16" to="21" step="1" >
+            <addReadoutModule id="${modX}" name="module"
+                origin="(0,(${modX}-16)*282*sqrt(3)/3-3*282*sqrt(3)/3)"
+                rotation="0" />
+          </for>
+        <for variable="modX" from="22" to="27" step="1" >
+            <addReadoutModule id="${modX}" name="module"
+                origin="(186,(${modX}-22)*282*sqrt(3)/3-3*282*sqrt(3)/3)"
+                rotation="0" />
+          </for>
+        <for variable="modX" from="28" to="31" step="1" >
+            <addReadoutModule id="${modX}" name="module"
+                origin="(372,(${modX}-28)*282*sqrt(3)/3-2*282*sqrt(3)/3)"
+                rotation="0" />
+          </for>
+        </readoutPlane>
+    </TRestReadout>
+
+  </TRestRun>
+
+
+  <addTask command="readoutrun->FormOutputFile()" value="ON"/>
+
+</TRestManager>
+

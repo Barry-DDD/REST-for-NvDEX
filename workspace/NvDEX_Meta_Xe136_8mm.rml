@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+
+<TRestManager verboseLevel="silent">
+  <globals>
+    <parameter name="outputFileName" value="NvDEX_Xe136_8mm.root" />
+    <searchPath value="${REST_INPUTDATA}/definitions/"/>
+
+    <!-- hex pixel side length -->
+    <variable name="pixelLength" value="12/sqrt(3)" overwrite="false" />
+
+    <!-- NEW: pixels per module -->
+    <variable name="NPixX" value="80" overwrite="false" />
+    <variable name="NPixY" value="80" overwrite="false" />
+  </globals>
+
+  <TRestRun name="readoutrun">
+
+    <TRestReadout name="pixelReadout" title="a basic pixelReadout">
+      <constant name="pixelsize" value="${pixelLength}"/>
+
+      <!-- NEW: module pixel counts (use constants for expressions below) -->
+      <constant name="NX" value="${NPixX}" />
+      <constant name="NY" value="${NPixY}" />
+
+      <!-- total channels = NX*NY -->
+      <constant name="nChannels" value="NX*NY" />
+      <constant name="nModules" value="1" />
+
+      <parameter name="mappingNodes" value="0" />
+      <constant name="myDecodingFile" value="/home/rest/rest_workspace/TEST/decodingfile.dec"/>
+
+      <!-- Derived geometry from pixelsize -->
+      <!-- pointy-top hex grid (your original numbers) -->
+      <constant name="pitchX"     value="sqrt(3)*pixelsize" />   <!-- was 8 -->
+      <constant name="pitchXHalf" value="pitchX/2" />            <!-- was 4 -->
+      <constant name="pitchY"     value="3/2*pixelsize" />       <!-- was 4*sqrt(3) -->
+
+      <!-- Module physical size derived from NX,NY and pixelsize
+           Keep consistent with your original convention:
+           moduleW = (2*NX - 1)/2 * pitchX   (for NX=16 -> 31/2*pitchX = 124)
+           moduleH = (NY - 1)*pitchY + pixelsize (for NY=16 -> 15*pitchY + pixelsize = 188*sqrt(3)/3)
+      -->
+      <constant name="moduleW" value="(2*NX-1)/2*pitchX" />
+      <constant name="moduleH" value="(NY-1)*pitchY + pixelsize" />
+
+      <readoutModule name="module" size="(moduleW,moduleH)" tolerance="1.e-4">
+
+        <!-- EVEN rows: r = 0,2,4,... -->
+        <for variable="rE" from="0" to="78" step="2">
+          <for variable="c" from="0" to="79" step="1">
+            <readoutChannel id="${rE}*NX+${c}">
+              <addPixel id="0"
+                        origin="(${c}*pitchX+pitchX, ${rE}*pitchY)"
+                        size="(pixelsize,pixelsize)"
+                        rotation="90" />
+            </readoutChannel>
+          </for>
+        </for>
+
+        <!-- ODD rows: r = 1,3,5,... -->
+        <for variable="rO" from="1" to="79" step="2">
+          <for variable="c" from="0" to="79" step="1">
+            <readoutChannel id="${rO}*NX+${c}">
+              <addPixel id="0"
+                        origin="(${c}*pitchX+pitchXHalf, ${rO}*pitchY)"
+                        size="(pixelsize,pixelsize)"
+                        rotation="90" />
+            </readoutChannel>
+          </for>
+        </for>
+
+      </readoutModule>
+
+      <!-- Single-module plane; origin is module bottom-left; center at (0,0) -->
+      <readoutPlane position="(0,0,845)" units="mm" planeVector="(0,0,-1)"
+                   chargeCollection="1" cathodePosition="(0,0,-845)">
+        <addReadoutModule id="0" name="module"
+                          origin="(-moduleW/2, -moduleH/2)"
+                          rotation="0" />
+      </readoutPlane>
+
+    </TRestReadout>
+
+  </TRestRun>
+
+  <addTask command="readoutrun->FormOutputFile()" value="ON"/>
+
+</TRestManager>

@@ -1,0 +1,813 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+
+<!DOCTYPE gdml [
+<!ENTITY materials SYSTEM "materials.xml">
+<!ENTITY geometry SYSTEM "geometry.gdml">
+]>
+
+<gdml xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://service-spi.web.cern.ch/service-spi/app/releases/GDML/schema/gdml.xsd">
+
+<define>
+
+	<!-- Some constants needed in caculations -->
+	<constant name="PI" value="3.14159265358979323846264" />
+    <constant name="degToRad" value="PI/180." />
+
+	<!-- Parameters for the Fiducial Volume and the HDPE layer -->
+	<constant name="ThicknessHDPE" value="3.5"/>
+	<constant name="RminDet" value="0"/>
+	<constant name="RmaxHDPE" value="48.0"/>
+	<constant name="RmaxDet" value="RmaxHDPE-ThicknessHDPE"/>
+	<constant name="deltaZHDPE" value="88"/>
+	<constant name="deltaZDet" value="deltaZHDPE-ThicknessHDPE"/>
+    <constant name="PhiminDet" value="0"/>
+    <constant name="deltaPhiDet" value="360"/>
+
+	<!-- Parameters of the Inner Copper Shielding -->
+	<constant name="ICSThickness" value="12"/>
+	<constant name="CuShieldOuterRadius" value="RmaxHDPE+ICSThickness"/>
+	<constant name="CuShieldInnerRadius" value="RmaxHDPE"/>
+	<constant name="CuShieldHalfLength" value="deltaZHDPE+ICSThickness"/>
+    <constant name="CuShieldHalfLengthInner" value="deltaZHDPE"/>
+
+	<!-- Parameters of the End-Caps Outer -->
+	<constant name="EndCapsOuterRadius" value="72.88"/>
+	<constant name="EndCapsInnerRadius" value="72.0"/>
+    <constant name="EndCapsShiftZ" value="-60.6"/>
+    <constant name="vesselHalfLengthOuter" value="146.4"/>
+
+	<!-- Parameters of the Space inside the SSV -->
+    <constant name="SSVThickness" value="1.0"/>
+	<constant name="SSVInnerRadius" value="CuShieldOuterRadius+0.2"/>
+	<constant name="SSVHalfLengthInner" value="100.1"/>
+    <constant name="vesselOuterRadius" value="CuShieldOuterRadius+SSVThickness+0.2"/>
+    <constant name="cylinderHalfLengthOuter" value="100.2"/>
+
+	<!-- Parameters of the Flanges -->
+	<constant name="flangesInnerRadius" value="vesselOuterRadius+0.1"/>
+	<constant name="flangesOuterRadius" value="vesselOuterRadius+0.1+13.15"/>
+	<constant name="flangesHalfLength" value="10.75/2.0"/>
+    <constant name="flangeShift" value="88.0"/>
+
+	<!-- Parameters of the Lead Shield -->
+	<constant name="LeadThickness" value="20.0"/>
+	<constant name="LeadShieldXInner" value="101.5"/>
+	<constant name="LeadShieldYInner" value="95.0"/>
+	<constant name="LeadShieldZInner" value="170.0"/>
+
+	<constant name="LeadShieldXOuter" value="LeadShieldXInner+LeadThickness"/>
+    <constant name="LeadShieldYOuter" value="LeadShieldYInner+LeadThickness"/>
+    <constant name="LeadShieldZOuter" value="LeadShieldZInner+LeadThickness"/>
+
+    <constant name="centerLeadX" value="-18.0"/>
+    <constant name="centerLeadY" value="0"/>
+    <constant name="centerLeadZ" value="0"/>
+  
+	<!-- Parameters of the HDPE Fillings -->
+	<constant name="BoxHDPEFillOuterX" value="vesselOuterRadius+20.0"/>
+	<constant name="BoxHDPEFillOuterY" value="vesselOuterRadius+20.0"/>
+	<constant name="BoxHDPEFillOuterZ" value="vesselHalfLengthOuter+20.0"/>
+
+	<constant name="CylHDPEFillInnerR" value="vesselOuterRadius+0.1"/>
+    <constant name="CylHDPEFillInnerL" value="vesselHalfLengthOuter"/>
+
+	<!-- Parameters of the HDPE Shield -->
+	<constant name="HDPEshieldThickness" value="0.1"/>
+	<constant name="HDPEShieldingXOuter" value="LeadShieldXOuter+HDPEshieldThickness"/>
+    <constant name="HDPEShieldingYOuter" value="LeadShieldYOuter+HDPEshieldThickness"/>
+    <constant name="HDPEShieldingZOuter" value="LeadShieldZOuter+HDPEshieldThickness"/>
+    
+
+    <!-- Parameters of the Pipies -->
+    <constant name="ThicknessPipes" value="0.6"/>
+    <constant name="RadiusLargePipe" value="15.0/2.0"/>
+    <constant name="RadiusMediumPipe" value="12.5/2.0"/>
+    <constant name="RadiusSmallPipe" value="8.0/2.0"/>
+    <constant name="LengthPipes" value="LeadShieldZInner-0.1"/>
+    <constant name="ShiftMediumPipeX" value="45.0/2.0"/>
+    <constant name="ShiftMediumPipeY" value="77.94/2.0"/>
+    <constant name="ShiftSmallPipeX" value="86.0/2.0"/>
+
+    <constant name="RadiusLargePipeMax" value="RadiusLargePipe"/>
+    <constant name="RadiusMediumPipeMax" value="RadiusMediumPipe"/>
+    <constant name="RadiusSmallPipeMax" value="RadiusSmallPipe"/>
+
+    <constant name="RadiusLargeEmptyPipeMin" value="RadiusLargePipe-ThicknessPipes"/>
+    <constant name="RadiusMediumEmptyPipeMin" value="RadiusMediumPipe-ThicknessPipes"/>
+    <constant name="RadiusSmallEmptyPipeMin" value="RadiusSmallPipe-ThicknessPipes"/>
+    <constant name="LengthEmptyPipesFunction" value="LengthPipes"/>
+
+    <constant name="RadiusLargeFullPipeMin" value="0"/>
+    <constant name="RadiusMediumFullPipeMin" value="0"/>
+    <constant name="RadiusSmallFullPipeMin" value="0"/>
+    <constant name="LengthFullPipesFunction" value="LengthPipes+0.05"/>
+
+    <!-- Parameters of the Holder -->
+    <constant name="ThicknessHolder" value="10.0"/>
+    <constant name="BaseOuterX" value="ThicknessHolder/2.0"/>
+    <constant name="BaseOuterY" value="83.9"/>
+    <constant name="BaseOuterZ" value="35.0"/>
+
+    <constant name="BaseInnerX" value="ThicknessHolder/2.0+0.5"/>
+    <constant name="BaseInnerY" value="BaseOuterY-10.0"/>
+    <constant name="BaseInnerZ" value="BaseOuterZ-10.0"/>
+
+    <constant name="HalfLengthVHandleX" value="41.5"/>
+    <constant name="HalfLengthVHandleY" value="ThicknessHolder/2.0"/>
+    <constant name="HalfLengthVHandleZ" value="ThicknessHolder/2.0"/>
+
+    <constant name="shiftVHandleX" value="HalfLengthVHandleX+5.0"/>
+    <constant name="shiftVHandleY" value="BaseOuterY-5.0"/>
+
+    <constant name="shiftBaseX" value="-HalfLengthVHandleX*2.0"/>
+    <constant name="shiftBaseY" value="0.0"/>
+    <constant name="shiftBaseZ" value="116.375"/>
+
+    <!-- Parameters of the diagonal holder -->
+    <constant name="HalfLengtDiagHolderOutZ" value="56.5/2.0"/>
+    <constant name="HalfLengtDiagHolderInnZ" value="36.7/2.0"/>
+
+    <constant name="HalfLengtDiagHolderOutXmax" value="35.0"/>
+    <constant name="HalfLengtDiagHolderInnXmax" value="25.0*(HalfLengtDiagHolderInnZ)/(HalfLengtDiagHolderInnZ-0.5)"/>
+
+    <constant name="HalfLengtDiagHolderOutXmin" value="5.0"/>
+    <constant name="HalfLengtDiagHolderInnXmin" value="5.0"/>
+
+    <constant name="HalfLengtDiagHolderOutY" value="5.0"/>
+    <constant name="HalfLengtDiagHolderInnY" value="5.1"/>
+
+    <constant name="DiagHandleShiftZ" value="-5.5"/>
+
+    <constant name="DiagHandleShiftPosX" value="HalfLengtDiagHolderOutZ+5.0"/>
+
+    <!-- Parameters of the Walls -->
+    <constant name="wallThickness" value="1"/>
+    <constant name="expHallOutLx" value="HDPEShieldingXOuter+wallThickness"/>
+    <constant name="expHallOutLy" value="HDPEShieldingYOuter+wallThickness"/>
+    <constant name="expHallOutLz" value="HDPEShieldingZOuter+wallThickness"/>
+
+    <constant name="lengthWorldX" value="500"/>
+    <constant name="lengthWorldY" value="500"/>
+    <constant name="lengthWorldZ" value="500"/>
+
+    <constant name="centerWorldX" value="0"/>
+    <constant name="centerWorldY" value="0"/>
+    <constant name="centerWorldZ" value="0"/>
+    <constant name="room temperature" value="300"/>
+
+
+
+
+</define>
+
+
+<!-- densities in g/cm3 @ 293.15K -->
+    <materials>
+
+        <!-- {{{ Elements definition -->
+        <element name="Hydrogen" formula="H" Z="1">
+            <atom value="1.00794" />
+        </element>
+        <element name="Carbon" formula="C" Z="6">
+            <atom value="12.0107" />
+        </element>
+        <element name="Nitrogen" formula="N" Z="7">
+            <atom value="14.0067" />
+        </element>
+        <element name="Fluor" formula="F" Z="9">
+            <atom value="18.9984" />
+        </element>
+        <element name="Aluminium" formula="Al" Z="13" state="solid">
+            <atom value="26.9815384" />
+        </element>
+        <element name="Silicon" formula="Si" Z="14" state="solid">
+            <atom value="28.0855" />
+        </element>
+        <element name="Chromium" formula="Cr" Z="24" state="solid">
+            <atom value="51.996" />
+        </element>
+        <element name="Manganese" formula="Mn" Z="25">
+            <atom value="54.938045" />
+        </element>
+        <element name="Iron" formula="Fe" Z="26" state="solid">
+            <atom value="55.845" />
+        </element>
+        <element name="Nickel" formula="Ni" Z="28" state="solid">
+            <atom value="58.6934" />
+        </element>
+        <element name="Ruthenium" formula="Ru" Z="44" state="solid">
+            <atom value="101.07" />
+        </element>
+        <element name="Xenon" formula="Xe" Z="54" state="gas">
+            <atom value="131.293" />
+        </element>
+        <element name="Argon" formula="Ar" Z="18" state="gas">
+            <atom value="39.948" />
+        </element>
+        <element name="Neon" formula="Ar" Z="10" state="gas">
+            <atom value="20.1797" />
+        </element>
+        <element name="Selenium" formula="Se" Z="34" state="solid">
+            <atom value="78.971" />
+        </element>
+
+
+    <!-- {{{ Air -->
+        <isotope N="14" Z="7" name="N14">
+            <atom unit="g/mole" value="14.0031"/>
+        </isotope>
+        <isotope N="15" Z="7" name="N15">
+            <atom unit="g/mole" value="15.0001"/>
+        </isotope>
+        <element name="Nitrogen">
+            <fraction n="0.99632" ref="N14"/>
+            <fraction n="0.00368" ref="N15"/>
+        </element>
+
+        <isotope N="16" Z="8" name="O16">
+            <atom unit="g/mole" value="15.9949"/>
+        </isotope>
+        <isotope N="17" Z="8" name="O17">
+            <atom unit="g/mole" value="16.9991"/>
+        </isotope>
+        <isotope N="18" Z="8" name="O18">
+            <atom unit="g/mole" value="17.9992"/>
+        </isotope>
+        <element name="Oxygen">
+            <fraction n="0.99757" ref="O16"/>
+            <fraction n="0.00038" ref="O17"/>
+            <fraction n="0.00205" ref="O18"/>
+        </element>
+        <material name="Air" state="gas">
+            <T unit="K" value="293.13"/>
+            <MEE unit="eV" value="85.7030667332999"/>
+            <D unit="g/cm3" value="0.00129"/>
+            <fraction n="0.7" ref="Nitrogen"/>
+            <fraction n="0.3" ref="Oxygen"/>
+        </material>
+        <!-- }}} -->
+
+
+        <material name="Galactic" state="gas">
+            <D unit="g/cm3" value="3.0e-23" />
+            <T unit="K" value="2.73" />
+            <P unit="bar" value="3.0e-23" />
+            <composite n="2" ref="Carbon" />
+            <composite n="4" ref="Hydrogen" />
+        </material>
+
+        <material name="HDPEMaterial" state="solid">
+            <D unit="g/cm3" value="0.946" />
+            <composite n="2" ref="Carbon" />
+            <composite n="4" ref="Hydrogen" />
+        </material>
+
+        <material name="POM" state="solid">
+            <D unit="g/cm3" value="1.41" />
+            <composite n="1" ref="Carbon" />
+            <composite n="2" ref="Hydrogen" />
+            <composite n="1" ref="Oxygen" />
+        </material>
+
+        <material name="SeF6" state="gas">
+            <D unit="g/cm3" value="0.08467" />
+            <T unit="K" value="293.15" />
+            <P unit="bar" value="10*1.01325" />
+            <composite n="1" ref="Selenium" />
+            <composite n="6" ref="Fluor" />
+        </material>
+
+
+        <!-- {{{ Copper -->
+        <isotope N="63" Z="29" name="Cu63">
+            <atom unit="g/mole" value="62.9296"/>
+        </isotope>
+        <isotope N="65" Z="29" name="Cu65">
+            <atom unit="g/mole" value="64.9278"/>
+        </isotope>
+        <element name="Cu">
+            <fraction n="0.6917" ref="Cu63"/>
+            <fraction n="0.3083" ref="Cu65"/>
+        </element>
+        <material name="Copper" state="solid">
+            <MEE unit="eV" value="322"/>
+            <D unit="g/cm3" value="8.96"/>
+            <fraction n="1" ref="Cu"/>
+        </material>
+        <!-- }}} -->
+
+
+        <!-- {{{ Stainlesssteel -->
+        <material name="Stainlesssteel" state="solid">
+            <MEE unit="eV" value="280.927567486627"/>
+            <D unit="g/cm3" value="8.02"/>
+            <fraction n="0.02" ref="Manganese"/>
+            <fraction n="0.01" ref="Silicon"/>
+            <fraction n="0.19" ref="Chromium"/>
+            <fraction n="0.1" ref="Nickel"/>
+            <fraction n="0.68" ref="Iron"/>
+        </material>
+        <!-- }}} -->
+
+
+        <!-- {{{ Lead -->
+        <isotope N="204" Z="82" name="Pb204">
+            <atom unit="g/mole" value="203.973"/>
+        </isotope>
+        <isotope N="206" Z="82" name="Pb206">
+            <atom unit="g/mole" value="205.974"/>
+        </isotope>
+        <isotope N="207" Z="82" name="Pb207">
+            <atom unit="g/mole" value="206.976"/>
+        </isotope>
+        <isotope N="208" Z="82" name="Pb208">
+            <atom unit="g/mole" value="207.977"/>
+        </isotope>
+        <element name="Pb">
+            <fraction n="0.014" ref="Pb204"/>
+            <fraction n="0.241" ref="Pb206"/>
+            <fraction n="0.221" ref="Pb207"/>
+            <fraction n="0.524" ref="Pb208"/>
+        </element>
+        <material name="Lead" state="solid">
+            <MEE unit="eV" value="823"/>
+            <D unit="g/cm3" value="11.34"/>
+            <fraction n="1" ref="Pb"/>
+        </material>
+        <!-- }}} -->
+
+        <!-- High-density polyethylene -->
+        <material name="HDPE" state="solid">
+            <MEE unit="eV" value="1"/> <!-- Don't know -->
+            <D unit="g/cm3" value="0.958" /> <!-- Not Sure -->
+            <composite n="2" ref="Carbon" />
+            <composite n="4" ref="Hydrogen" />
+        </material>
+        <!-- }}} -->
+
+
+    </materials>
+
+
+<solids>
+    <box name="WorldSolid" x="2*lengthWorldX" y="2*lengthWorldY" z="2*lengthWorldZ" lunit="cm" />
+    
+<!-- Wall -->
+<box name="Outerwall" x="2*expHallOutLx" y="2*expHallOutLy" z="2*expHallOutLz" lunit="cm" />
+<box name="HDPEOuterBox" x="2*HDPEShieldingXOuter" y="2*HDPEShieldingYOuter" z="2*HDPEShieldingZOuter" lunit="cm" />
+
+<subtraction name="Wall">
+    <first ref="Outerwall"/>
+    <second ref="HDPEOuterBox"/>
+</subtraction>
+
+<!-- Gas -->
+<tube name="fSolidAbsorber" startphi="PhiminDet" deltaphi="deltaPhiDet" rmin="RminDet" rmax="RmaxDet" z="2*deltaZDet" aunit="deg" lunit="cm" />
+
+<!-- HDPE Shield -->
+<box name="LeadOuterBox" x="2*LeadShieldXOuter" y="2*LeadShieldYOuter" z="2*LeadShieldZOuter" lunit="cm" />
+<box name="LeadInnerBox" x="2*LeadShieldXInner" y="2*LeadShieldYInner" z="2*LeadShieldZInner" lunit="cm" />
+
+<subtraction name="HDPE_subtraction">
+    <first ref="HDPEOuterBox"/>
+    <second ref="LeadOuterBox"/>
+</subtraction>
+
+
+<!-- Lead Shield -->
+<subtraction name="Lead_subtraction">
+    <first ref="LeadOuterBox"/>
+    <second ref="LeadInnerBox"/>
+</subtraction>
+
+<!-- ICS Shield -->
+<tube name="ICSOuterTubs" startphi="0" deltaphi="360" rmin="0" rmax="CuShieldOuterRadius" z="2*CuShieldHalfLength" aunit="deg" lunit="cm" />
+<tube name="fsolidHDPEext" startphi="0" deltaphi="360" rmin="0" rmax="48" z="2*(deltaZDet+ThicknessHDPE)" aunit="deg" lunit="cm" />
+<subtraction name="ICS_subtraction">
+    <first ref="ICSOuterTubs"/>
+    <second ref="fsolidHDPEext"/> 
+</subtraction>
+
+
+<!-- SSV Shield -->
+    <!-- Barrel -->
+<tube name="OuterSSVesselBody" startphi="0" deltaphi="360" rmin="0" rmax="vesselOuterRadius" z="2*cylinderHalfLengthOuter" aunit="deg" lunit="cm" />
+<tube name="InnerSSVesselBody" startphi="0" deltaphi="360" rmin="0" rmax="SSVInnerRadius" z="2*SSVHalfLengthInner" aunit="deg" lunit="cm" />
+
+    <!-- EndCups -->
+<sphere name="solidEndCapOuterSphere" rmin="EndCapsInnerRadius" rmax="EndCapsOuterRadius" deltaphi="360" deltatheta="57.087" aunit="deg" lunit="cm"/>
+
+<sphere name="solidEndCapInnerSphere" rmin="EndCapsInnerRadius" rmax="EndCapsOuterRadius" deltaphi="360" deltatheta="57.087" aunit="deg" lunit="cm"/>
+
+
+    <!-- Unions of Barrel + EndCaps -->
+<union name="OuterSSV_BodyPlusEndCapsPart1" >
+  <first ref="OuterSSVesselBody" />
+  <second ref="solidEndCapOuterSphere" />
+  <position name="Position3" unit="cm" x="0" y="0" z="EndCapsShiftZ" />
+  <rotation name="Rotation1" unit="deg" x="0" y="180" z="0" aunit="deg" />
+</union>
+
+<union name="OuterSSV_BodyPlusEndCaps" >
+  <first ref="OuterSSV_BodyPlusEndCapsPart1" />
+  <second ref="solidEndCapOuterSphere" />
+  <position name="Position4" unit="cm" x="0" y="0" z="-EndCapsShiftZ" />
+</union>
+
+<union name="InnerSSV_BodyPlusEndCapsPart1" >
+  <first ref="OuterSSVesselBody" />
+  <second ref="solidEndCapInnerSphere" />
+  <position name="Position5" unit="cm" x="0" y="0" z="EndCapsShiftZ" />
+  <rotation name="Rotation2" unit="deg" x="0" y="180" z="0" aunit="deg" />
+</union>
+
+<union name="InnerSSV_BodyPlusEndCaps" >
+  <first ref="InnerSSV_BodyPlusEndCapsPart1" />
+  <second ref="solidEndCapOuterSphere" />
+  <position name="Position6" unit="cm" x="0" y="0" z="-EndCapsShiftZ" />
+</union>
+
+<subtraction name="InnerSSV_Subtraction">
+    <first ref="InnerSSV_BodyPlusEndCaps"/>
+    <second ref="ICSOuterTubs"/> 
+</subtraction>
+
+<subtraction name="SSV_subtraction">
+    <first ref="OuterSSV_BodyPlusEndCaps"/>
+    <second ref="InnerSSV_BodyPlusEndCaps"/> 
+</subtraction>
+
+
+
+<!-- Pipes-->
+    <!-- Full Pipes-->
+<tube name="CentralPipeFull" startphi="0" deltaphi="360" rmin="RadiusLargeFullPipeMin" rmax="RadiusLargePipeMax" z="2*LengthFullPipesFunction" aunit="deg" lunit="cm" />
+<tube name="MediumPipeFull" startphi="0" deltaphi="360" rmin="RadiusMediumFullPipeMin" rmax="RadiusMediumPipeMax" z="2*LengthFullPipesFunction" aunit="deg" lunit="cm" />
+<tube name="SmallPipeFull" startphi="0" deltaphi="360" rmin="RadiusSmallFullPipeMin" rmax="RadiusSmallPipeMax" z="2*LengthFullPipesFunction" aunit="deg" lunit="cm" />
+
+<union name="PipesFullPart1" >
+  <first ref="CentralPipeFull" />
+  <second ref="MediumPipeFull" />
+  <position name="Position7" unit="cm" x="ShiftMediumPipeX" y="ShiftMediumPipeY" z="0" />
+</union>
+
+<union name="PipesFullPart2" >
+  <first ref="PipesFullPart1" />
+  <second ref="MediumPipeFull" />
+  <position name="Position8" unit="cm" x="ShiftMediumPipeX" y="-ShiftMediumPipeY" z="0" />
+</union>
+
+<union name="PipesFullPart3" >
+  <first ref="PipesFullPart2" />
+  <second ref="MediumPipeFull" />
+  <position name="Position9" unit="cm" x="-ShiftMediumPipeX" y="ShiftMediumPipeY" z="0" />
+</union>
+
+<union name="PipesFullPart4" >
+  <first ref="PipesFullPart3" />
+  <second ref="MediumPipeFull" />
+  <position name="Position10" unit="cm" x="-ShiftMediumPipeX" y="-ShiftMediumPipeY" z="0" />
+</union>
+
+<union name="PipesFullPart5" >
+  <first ref="PipesFullPart4" />
+  <second ref="SmallPipeFull" />
+  <position name="Position11" unit="cm" x="ShiftSmallPipeX" y="0" z="0" />
+</union>
+
+<union name="PipesFull" >
+  <first ref="PipesFullPart5" />
+  <second ref="SmallPipeFull" />
+  <position name="Position12" unit="cm" x="-ShiftSmallPipeX" y="0" z="0" />
+</union>
+
+
+
+
+ <!-- Empty Pipes-->
+<tube name="CentralPipeEmpty" startphi="0" deltaphi="360" rmin="RadiusLargeEmptyPipeMin" rmax="RadiusLargePipeMax" z="2*LengthEmptyPipesFunction" aunit="deg" lunit="cm" />
+<tube name="MediumPipeEmpty" startphi="0" deltaphi="360" rmin="RadiusMediumEmptyPipeMin" rmax="RadiusMediumPipeMax" z="2*LengthEmptyPipesFunction" aunit="deg" lunit="cm" />
+<tube name="SmallPipeEmpty" startphi="0" deltaphi="360" rmin="RadiusSmallEmptyPipeMin" rmax="RadiusSmallPipeMax" z="2*LengthEmptyPipesFunction" aunit="deg" lunit="cm" />
+
+<union name="PipesEmptyPart1" >
+  <first ref="CentralPipeEmpty" />
+  <second ref="MediumPipeEmpty" />
+  <position name="Position13" unit="cm" x="ShiftMediumPipeX" y="ShiftMediumPipeY" z="0" />
+</union>
+
+<union name="PipesEmptyPart2" >
+  <first ref="PipesEmptyPart1" />
+  <second ref="MediumPipeEmpty" />
+  <position name="Position14" unit="cm" x="ShiftMediumPipeX" y="-ShiftMediumPipeY" z="0" />
+</union>
+
+<union name="PipesEmptyPart3" >
+  <first ref="PipesEmptyPart2" />
+  <second ref="MediumPipeEmpty" />
+  <position name="Position15" unit="cm" x="-ShiftMediumPipeX" y="ShiftMediumPipeY" z="0" />
+</union>
+
+<union name="PipesEmptyPart4" >
+  <first ref="PipesEmptyPart3" />
+  <second ref="MediumPipeEmpty" />
+  <position name="Position16" unit="cm" x="-ShiftMediumPipeX" y="-ShiftMediumPipeY" z="0" />
+</union>
+
+<union name="PipesEmptyPart5" >
+  <first ref="PipesEmptyPart4" />
+  <second ref="SmallPipeEmpty" />
+  <position name="Position17" unit="cm" x="ShiftSmallPipeX" y="0" z="0" />
+</union>
+
+<union name="PipesEmpty" >
+  <first ref="PipesEmptyPart5" />
+  <second ref="SmallPipeEmpty" />
+  <position name="Position18" unit="cm" x="-ShiftSmallPipeX" y="0" z="0" />
+</union>
+
+
+<subtraction name="PipesCutTmp">
+    <first ref="PipesEmpty"/>
+    <second ref="OuterSSV_BodyPlusEndCaps"/>
+</subtraction>
+
+
+
+
+
+<!--Holder-->
+<box name="VerticalHandle" x="2*HalfLengthVHandleX" y="2*HalfLengthVHandleY" z="2*HalfLengthVHandleZ" lunit="cm" />
+<box name="OuterBase" x="2*BaseOuterX" y="2*BaseOuterY" z="2*BaseOuterZ" lunit="cm" />
+<box name="InnerBase" x="2*BaseInnerX" y="2*BaseInnerY" z="2*BaseInnerZ" lunit="cm" />
+
+<subtraction name="BaseSubtraction">
+    <first ref="OuterBase"/>
+    <second ref="InnerBase"/>
+</subtraction>
+
+<trd name="DiagonalHandleOut" lunit="cm" x1="2.0*HalfLengtDiagHolderOutXmax" x2="2.0*HalfLengtDiagHolderOutXmin" y1="2*HalfLengtDiagHolderOutY" y2="2*HalfLengtDiagHolderOutY" z="HalfLengtDiagHolderOutZ"/>
+
+<trd name="DiagonalHandleInn" lunit="cm" x1="2.0*HalfLengtDiagHolderInnXmax" x2="2.0*HalfLengtDiagHolderInnXmin" y1="2*HalfLengtDiagHolderInnY" y2="2*HalfLengtDiagHolderInnY" z="HalfLengtDiagHolderInnZ"/>
+
+<subtraction name="DiagHandleSubtraction">
+    <first ref="DiagonalHandleOut"/>
+    <second ref="DiagonalHandleInn"/>
+    <position name="Position21" unit="cm" x="0" y="0" z="DiagHandleShiftZ" />
+</subtraction>
+
+<union name="HolderCreatedPart1" >
+  <first ref="BaseSubtraction" />
+  <second ref="VerticalHandle" />
+  <position name="Position22" unit="cm" x="shiftVHandleX" y="shiftVHandleY" z="0" />
+</union>
+
+<union name="HolderCreatedPart2" >
+  <first ref="HolderCreatedPart1" />
+  <second ref="VerticalHandle" />
+  <position name="Position23" unit="cm" x="shiftVHandleX" y="-shiftVHandleY" z="0" />
+</union>
+
+<union name="HolderCreatedPart3" >
+  <first ref="HolderCreatedPart2" />
+  <second ref="DiagHandleSubtraction" />
+  <position name="Position24" unit="cm" x="DiagHandleShiftPosX" y="shiftVHandleY" z="0" />
+  <rotation name="DiagHandleSubtractionRotation" unit="deg" x="0" y="90" z="0" aunit="deg" />
+</union>
+
+<union name="HolderCreated" >
+  <first ref="HolderCreatedPart3" />
+  <second ref="DiagHandleSubtraction" />
+  <position name="Position25" unit="cm" x="DiagHandleShiftPosX" y="-shiftVHandleY" z="0" />
+  <rotation name="DiagHandleSubtractionRotation" unit="deg" x="0" y="90" z="0" aunit="deg" />
+</union>
+
+
+
+<!-- HDPE Fillings -->
+<tube name="HDPEFillCentralInner" startphi="0" deltaphi="360" rmin="0" rmax="CylHDPEFillInnerR" z="2*CylHDPEFillInnerL" aunit="deg" lunit="cm" />
+
+<subtraction name="HDPEInnerShield_subtractionTmp1">
+    <first ref="LeadInnerBox"/>
+    <second ref="PipesFull"/>
+    <position name="Position26" unit="cm" x="-centerLeadX" y="-centerLeadY" z="-centerLeadZ" />
+</subtraction>
+
+<subtraction name="HDPEInnerShield_subtractionTmp2">
+    <first ref="HDPEInnerShield_subtractionTmp1"/>
+    <second ref="HolderCreated"/>
+    <position name="Position27" unit="cm" x="shiftBaseX-centerLeadX" y="shiftBaseY" z="-shiftBaseZ" />
+</subtraction>
+
+<subtraction name="HDPEInnerShield_subtractionTmp3">
+    <first ref="HDPEInnerShield_subtractionTmp2"/>
+    <second ref="HolderCreated"/>
+    <position name="Position28" unit="cm" x="shiftBaseX-centerLeadX" y="shiftBaseY" z="shiftBaseZ" />
+</subtraction>
+
+<subtraction name="HDPEFillCentral_subtraction1">
+    <first ref="HDPEInnerShield_subtractionTmp3"/>
+    <second ref="HDPEFillCentralInner"/>
+    <position name="Position29" unit="cm" x="-centerLeadX" y="-centerLeadY" z="-centerLeadZ" />
+</subtraction>
+
+
+<tube name="FlangesCuttmp" startphi="0" deltaphi="360" rmin="0" rmax="flangesOuterRadius" z="2*(1.1*flangesHalfLength+flangeShift)" aunit="deg" lunit="cm" />
+
+<subtraction name="HDPEFillCentral_subtraction">
+    <first ref="HDPEFillCentral_subtraction1"/>
+    <second ref="FlangesCuttmp"/>
+    <position name="Position30" unit="cm" x="-centerLeadX" y="-centerLeadY" z="-centerLeadZ" />
+</subtraction>
+
+
+
+
+<subtraction name="fSolidPOM">
+    <first ref="fsolidHDPEext"/>
+    <second ref="fSolidAbsorber"/> 
+</subtraction>
+
+
+
+<!-- Flanges -->
+<tube name="FlangeOuter" startphi="0" deltaphi="360" rmin="0" rmax="flangesOuterRadius" z="2*flangesHalfLength" aunit="deg" lunit="cm" />
+<tube name="FlangeInner" startphi="0" deltaphi="360" rmin="0" rmax="flangesInnerRadius" z="1.1*2*flangesHalfLength" aunit="deg" lunit="cm" />
+
+<subtraction name="Flange_subtraction">
+    <first ref="FlangeOuter"/>
+    <second ref="FlangeInner"/> 
+</subtraction>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</solids>
+
+<structure>
+
+
+    <volume name="WallVolume">
+        <materialref ref="Galactic"/>
+        <solidref ref="Wall"/>
+    </volume>
+
+    <volume name="HDPEVolume">
+        <materialref ref="HDPE"/>
+        <solidref ref="HDPE_subtraction"/>
+    </volume>
+
+    <volume name="LeadShieldVolume">
+        <materialref ref="Lead"/>
+        <solidref ref="Lead_subtraction"/>
+    </volume>
+
+    <volume name="HolderVolume">
+        <materialref ref="Stainlesssteel"/>
+        <solidref ref="HolderCreated"/>
+    </volume>
+
+    <volume name="HDPEFillingVolume">
+        <materialref ref="HDPE"/>
+        <solidref ref="HDPEFillCentral_subtraction"/>
+    </volume>
+
+
+    <volume name="PipesVolume">
+        <materialref ref="Stainlesssteel"/> 
+        <solidref ref="PipesCutTmp"/>
+    </volume>
+
+    <volume name="SSVVolume">
+        <materialref ref="Stainlesssteel"/> 
+        <solidref ref="SSV_subtraction"/>
+    </volume>
+
+    <volume name="InnerSSVVolume">
+        <materialref ref="Galactic"/>
+        <solidref ref="InnerSSV_Subtraction"/>
+    </volume>
+
+    <volume name="FlangeVolume">
+        <materialref ref="Stainlesssteel"/>
+        <solidref ref="Flange_subtraction"/>
+    </volume>
+
+    <volume name="ICSVolume">
+        <materialref ref="Copper"/>
+        <solidref ref="ICS_subtraction"/>
+    </volume>
+
+    <volume name="POMVolume">
+        <materialref ref="POM"/>
+        <solidref ref="fSolidPOM"/>
+    </volume>
+
+    <volume name="gasVolume">
+        <materialref ref="SeF6"/>
+        <solidref ref="fSolidAbsorber"/>
+    </volume>
+
+
+
+<!--Position-->
+<volume name="World">
+
+        <materialref ref="Galactic"/>
+        <solidref ref="WorldSolid"/>
+
+    <physvol name="Wall">
+        <volumeref ref="WallVolume"/>
+        <position name="WallVolumePosition" unit="cm" x="centerLeadX" y="centerLeadY" z="centerLeadZ"/>
+    </physvol>
+
+    <physvol name="HDPE Shield">
+            <volumeref ref="HDPEVolume"/>
+            <position name="HDPEVolumePosition" unit="cm" x="centerLeadX" y="centerLeadY" z="centerLeadZ"/>
+        </physvol>
+
+    <physvol name="Lead Shield">
+            <volumeref ref="LeadShieldVolume"/>
+            <position name="LeadShieldVolumePosition" unit="cm" x="centerLeadX" y="centerLeadY" z="centerLeadZ"/>
+        </physvol>
+
+    <physvol name="HolderL">
+            <volumeref ref="HolderVolume"/>
+            <position name="HolderVolumeLPosition" unit="cm" x="shiftBaseX" y="shiftBaseY" z="-shiftBaseZ"/>
+        </physvol>
+
+    <physvol name="HolderR">
+            <volumeref ref="HolderVolume"/>
+            <position name="HolderVolumeRPosition" unit="cm" x="shiftBaseX" y="shiftBaseY" z="shiftBaseZ"/>
+        </physvol>
+
+    <physvol name="HDPEFilling">
+            <volumeref ref="HDPEFillingVolume"/>
+            <position name="HDPEFillingVolumePosition" unit="cm" x="centerLeadX" y="centerLeadY" z="centerLeadZ"/>
+        </physvol>
+    
+
+
+    <physvol name="Pipes">
+            <volumeref ref="PipesVolume"/>
+            <position name="PipesLVolumePosition" unit="cm" x="0" y="0" z="0"/>
+        </physvol>
+
+    <physvol name="SSV">
+            <volumeref ref="SSVVolume"/>
+            <position name="SSVVolumePosition" unit="cm" x="0" y="0" z="0"/>
+        </physvol>
+
+    <physvol name="InnerSSV">
+            <volumeref ref="InnerSSVVolume"/>
+            <position name="InnerSSVVolumePosition" unit="cm" x="0" y="0" z="0"/>
+        </physvol>
+
+    <physvol name="FlangeR">
+            <volumeref ref="FlangeVolume"/>
+            <position name="FlangeVolumeRPosition" unit="cm" x="0" y="0" z="flangeShift"/>
+        </physvol>
+    
+    <physvol name="FlangeL">
+            <volumeref ref="FlangeVolume"/>
+            <position name="FlangeVolumeLPosition" unit="cm" x="0" y="0" z="-flangeShift"/>
+        </physvol>
+
+    <physvol name="ICS">
+            <volumeref ref="ICSVolume"/>
+            <position name="ICSVolumePosition" unit="cm" x="0" y="0" z="0"/>
+        </physvol>
+
+    <physvol name="POM">
+            <volumeref ref="POMVolume"/>
+            <position name="POMVolumePosition" unit="cm" x="0" y="0" z="0"/>
+        </physvol>
+
+    <physvol name="Gas">
+            <volumeref ref="gasVolume"/>
+            <position name="gasVolumePosition" unit="cm" x="0" y="0" z="0"/>
+        </physvol>
+
+
+
+    </volume>
+
+</structure>
+
+<setup name="Default" version="1.0">
+    <world ref="World"/>
+</setup>
+
+</gdml>
+
