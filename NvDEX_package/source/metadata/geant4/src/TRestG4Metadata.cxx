@@ -1035,6 +1035,7 @@ void TRestG4Metadata::ReadEventDataFile(TString fName)
     }
 }
 
+
 Int_t TRestG4Metadata::ReadNewDecay0File(TString fileName)
 {
     ifstream infile;
@@ -1141,6 +1142,7 @@ Int_t TRestG4Metadata::ReadNewDecay0File(TString fileName)
             else
             {
                 cout << "Particle id " << pID << " not recognized" << endl;
+                
             }
 
             TVector3 momDirection(momx, momy, momz);
@@ -1248,6 +1250,7 @@ Int_t TRestG4Metadata::ReadOldDecay0File(TString fileName)
             else
             {
                 cout << "Particle id " << pID << " not recognized" << endl;
+                
             }
 
             TVector3 momDirection(momx, momy, momz);
@@ -1266,11 +1269,9 @@ Int_t TRestG4Metadata::ReadOldDecay0File(TString fileName)
 
     return 1;
 }
-Int_t TRestG4Metadata::ReadDecay0FileWithPositionandTime(TString fileName)
-{
+Int_t TRestG4Metadata::ReadDecay0FileWithPositionandTime(TString fileName) {
     ifstream infile(fileName.Data());
-    if (!infile.is_open())
-    {
+    if (!infile.is_open()) {
         std::cerr << "Error when opening file " << fileName.Data() << std::endl;
         return 0;
     }
@@ -1279,23 +1280,19 @@ Int_t TRestG4Metadata::ReadDecay0FileWithPositionandTime(TString fileName)
     std::string s;
 
     // 预读取文件头，跳过前30行或找到特定标记
-    for (int i = 0; i < 30; ++i)
-    {
+    for (int i = 0; i < 30; ++i) {
         std::getline(infile, s);
-        if (s.find("#!bxdecay0 1.0.0") != std::string::npos)
-        {
+        if (s.find("#!bxdecay0 1.0.0") != std::string::npos) {
             std::cerr << "Old format not supported" << std::endl;
             return 0;
         }
-        if (s.find("First event and full number of events:") != std::string::npos)
-        {
+        if (s.find("First event and full number of events:") != std::string::npos) {
             break;
         }
     }
 
     Int_t tmpInt = 0, fGeneratorEvents = 0;
-    if (!(infile >> tmpInt >> fGeneratorEvents))
-    {
+    if (!(infile >> tmpInt >> fGeneratorEvents)) {
         std::cerr << "Error reading total events header" << std::endl;
         return 0;
     }
@@ -1303,68 +1300,60 @@ Int_t TRestG4Metadata::ReadDecay0FileWithPositionandTime(TString fileName)
     std::cout << "Reading generator file : " << fileName << std::endl;
     std::cout << "Total number of events : " << fGeneratorEvents << std::endl;
 
-    for (int n = 0; n < fGeneratorEvents && !infile.eof(); ++n)
-    {
-        auto *particleCollection = TRestParticleCollection::instantiate();
+    for (int n = 0; n < fGeneratorEvents && !infile.eof(); ++n) {
+        auto* particleCollection = TRestParticleCollection::instantiate();
         particleCollection->RemoveParticles();
 
         Int_t evID = 0, nParticles = 0;
         Double_t evtTime = 0;
-        if (!(infile >> evID >> evtTime >> nParticles))
-        {
+        if (!(infile >> evID >> evtTime >> nParticles)) {
             std::cerr << "Error reading event header at event index " << n << std::endl;
             return 0;
         }
 
-        for (int i = 0; i < nParticles && !infile.eof(); ++i)
-        {
+        for (int i = 0; i < nParticles && !infile.eof(); ++i) {
             Int_t pID;
             Double_t momx, momy, momz;
             Double_t time, posx, posy, posz;
             Double_t mass, energy = -1, momentum2;
 
             // 尝试读入 8 列：pID momx momy momz time x y z
-            if (!(infile >> pID >> momx >> momy >> momz >> time >> posx >> posy >> posz))
-            {
-                std::cerr << "Error reading particle data at event "
+            if (!(infile >> pID >> momx >> momy >> momz >> time >> posx >> posy >> posz)) {
+                std::cerr << "Error reading particle data at event " 
                           << n << ", particle " << i << std::endl;
                 return 0;
             }
 
             TRestParticle particle;
-            //
-            if (pID == 3)
-            { // electron
-                momentum2 = momx * momx + momy * momy + momz * momz;
-                mass = 0.511; // MeV/c^2
-                energy = sqrt(momentum2 + mass * mass) - mass;
+            // 设置粒子基本性质
+            if (pID == 3) {  // electron
+                momentum2 = momx*momx + momy*momy + momz*momz;
+                mass = 0.511;  // MeV/c^2
+                energy = sqrt(momentum2 + mass*mass) - mass;
                 particle.SetParticleName("e-");
                 particle.SetParticleCharge(-1);
             }
-            else if (pID == 1)
-            { // gamma
-                momentum2 = momx * momx + momy * momy + momz * momz;
+            else if (pID == 1) {  // gamma
+                momentum2 = momx*momx + momy*momy + momz*momz;
                 energy = sqrt(momentum2);
                 particle.SetParticleName("gamma");
                 particle.SetParticleCharge(0);
             }
-            else if (pID == 47)
-            { // alpha
-                momentum2 = momx * momx + momy * momy + momz * momz;
-                mass = 3727.5; // MeV/c^2
-                energy = sqrt(momentum2 + mass * mass) - mass;
+            else if (pID == 47) {  // alpha
+                momentum2 = momx*momx + momy*momy + momz*momz;
+                mass = 3727.5;  // MeV/c^2
+                energy = sqrt(momentum2 + mass*mass) - mass;
                 particle.SetParticleName("alpha");
                 particle.SetParticleCharge(2);
             }
-            else
-            {
+            else {
                 std::cerr << "Particle id " << pID << " not recognized, skipping" << std::endl;
                 continue;
             }
 
             TVector3 momDir(momx, momy, momz);
             particle.SetDirection(momDir.Unit());
-            particle.SetEnergy(1000. * energy); // 转 keV
+            particle.SetEnergy(1000. * energy);   // 转 keV
             particle.SetPosition(posx, posy, posz);
             particle.SetTime(time);
 
@@ -1377,6 +1366,8 @@ Int_t TRestG4Metadata::ReadDecay0FileWithPositionandTime(TString fileName)
     fPrimaryGenerator.SetSourcesFromParticleCollection(0);
     return 1;
 }
+
+
 
 void TRestG4Metadata::ReadParticleSource(TString definition)
 {
@@ -1419,64 +1410,13 @@ void TRestG4Metadata::ReadParticleSource(TString definition)
         source.SetAngularName(GetFieldValue("spctName", angularDefinition));
     }
 
-    if (source.GetAngularDistType() == "planeSector")
-    {
-        TString nStr = GetFieldValue("normal", angularDefinition);
-        if (nStr != "Not defined")
-            source.SetPlaneNormal(StringTo3DVector(nStr.Data()));
-
-        TString rStr = GetFieldValue("ref", angularDefinition);
-        if (rStr != "Not defined")
-            source.SetPlaneRef(StringTo3DVector(rStr.Data()));
-
-        TString phiStr = GetFieldValue("phi", angularDefinition);
-        if (phiStr == "Not defined")
-        {
-            cout << "ERROR: planeSector requires phi=\"(min,max)\" (in radians for now)" << endl;
-        }
-        else
-        {
-            TVector2 phis = StringTo2DVector(phiStr.Data());
-            source.SetPhiMin(phis.X());
-            source.SetPhiMax(phis.Y());
-        }
-    }
-    if (source.GetAngularDistType() == "angle")
-    {
-        TString thetaStr = GetFieldValue("theta", angularDefinition);
-        if (thetaStr == "Not defined")
-        {
-            cout << "ERROR: angle requires theta=\"(min,max)\" (radians)" << endl;
-        }
-        else
-        {
-            TVector2 thetas = StringTo2DVector(thetaStr.Data());
-            source.SetAngleThetaRange(thetas.X(), thetas.Y());
-        }
-
-        TString phiStr = GetFieldValue("phi", angularDefinition);
-        if (phiStr == "Not defined")
-        {
-            cout << "ERROR: angle requires phi=\"(min,max)\" (radians)" << endl;
-        }
-        else
-        {
-            TVector2 phis = StringTo2DVector(phiStr.Data());
-            source.SetAnglePhiRange(phis.X(), phis.Y());
-        }
-    }
-
     if (fPrimaryGenerator.GetNumberOfSources() == 0 && source.GetAngularDistType() == "backtoback")
     {
         cout << "WARNING: First source cannot be backtoback. Setting it to isotropic" << endl;
         source.SetAngularDistType("isotropic");
     }
 
-    if (source.GetAngularDistType() != "planeSector" &&
-        source.GetAngularDistType() != "angle")
-    {
-        source.SetDirection(StringTo3DVector(GetFieldValue("direction", angularDefinition)));
-    }
+    source.SetDirection(StringTo3DVector(GetFieldValue("direction", angularDefinition)));
 
     // Energy distribution parameters
     string energyDefinition = GetKEYDefinition("energyDist", sourceString);

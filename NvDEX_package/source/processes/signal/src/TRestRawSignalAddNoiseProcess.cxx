@@ -114,16 +114,16 @@ TRestEvent* TRestRawSignalAddNoiseProcess::ProcessEvent(TRestEvent* evInput) {
 
         // if (n<50)
         // {   
-        //     TCanvas *c1 = new TCanvas(Form("c1_%d", n), Form("c1_%d", n), 800, 600);
-        //     TGraph *graph1 = new TGraph(nBins, &x[0], &out[0]);
-        //     graph1->SetTitle(" ");
-        //     graph1->GetXaxis()->SetTitle("Time/s");
-        //     graph1->GetYaxis()->SetTitle("U/mV");
-        //     // graph1->GetYaxis()->SetRangeUser(700, 1300);
-        //     // graph1->GetXaxis()->SetRangeUser(2.8, 3.6);
-        //     graph1->Draw("AL");
-        //     c1->Draw();
-        //     c1->SaveAs(Form("/home/rest/rest_workspace/TEST/signalshaping/SignalAddnoise_%d.png", n));
+            TCanvas *c1 = new TCanvas(Form("c1_%d", n), Form("c1_%d", n), 800, 600);
+            TGraph *graph1 = new TGraph(nBins, &x[0], &out[0]);
+            graph1->SetTitle(" ");
+            graph1->GetXaxis()->SetTitle("Time/s");
+            graph1->GetYaxis()->SetTitle("U/mV");
+            // graph1->GetYaxis()->SetRangeUser(700, 1300);
+            // graph1->GetXaxis()->SetRangeUser(2.8, 3.6);
+            graph1->Draw("AL");
+            c1->Draw();
+            c1->SaveAs(Form("/home/rest/rest_workspace/TEST/signalshaping/SignalAddnoise_%d.png", n));
         // }
 
     }

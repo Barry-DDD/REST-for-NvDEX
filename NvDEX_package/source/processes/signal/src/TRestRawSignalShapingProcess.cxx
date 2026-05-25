@@ -256,7 +256,7 @@ TRestEvent *TRestRawSignalShapingProcess::ProcessEvent(TRestEvent *evInput)
         rsp = new double[Nr];
         for (int i = 0; i < Nr; i++)
         {
-            rsp[i] = fShapingGain * (TMath::Exp(-i / fShapingTime));
+            rsp[i] = fShapingGain * (1.0 - 1.0 / (exp((i - 0.5) / 1e-05) + 1.0)) * (exp(-(i - 0.5) / 300));
         }
     }
     else
@@ -267,9 +267,9 @@ TRestEvent *TRestRawSignalShapingProcess::ProcessEvent(TRestEvent *evInput)
     }
 
     // Making sure that rsp integral is 1.
-    Double_t sum = 0;
-    for (int n = 0; n < Nr; n++) sum += rsp[n];
-    for (int n = 0; n < Nr; n++) rsp[n] = rsp[n] / sum;
+    // Double_t sum = 0;
+    // for (int n = 0; n < Nr; n++) sum += rsp[n];
+    // for (int n = 0; n < Nr; n++) rsp[n] = rsp[n] / sum;
 
     Double_t totalIons = 0;
     Double_t totalEnergy = 0;
@@ -284,20 +284,19 @@ TRestEvent *TRestRawSignalShapingProcess::ProcessEvent(TRestEvent *evInput)
         TRestRawSignal inSignal = *fInputSignalEvent->GetSignal(n);
         Int_t nBins = inSignal.GetNumberOfPoints();
         // cout<<"nBins:"<<nBins<<endl;
-        // std::vector<double> x(nBins);
-        // double t = 0;
-        // for (int i = 0; i < nBins; i++)
-        // {
+        std::vector<double> x(nBins);
+        double t = 0;
+        for (int i = 0; i < nBins; i++)
+        {
 
-        //     x[i] = t;
-        //     t++;
-        // }
-        // std::vector<double> M(nBins);
-        // for (int i = 0; i < nBins; i++)
-        // {
-        //     M[i] = inSignal.GetData(i)*1000/21.9;
-        //     totalIons+=M[i];
-        // }
+            x[i] = t / 250.0;
+            t++;
+        }
+        std::vector<double> M(nBins);
+        for (int i = 0; i < nBins; i++)
+        {
+            M[i] = inSignal.GetData(i) * 1000 / 24.8;
+        }
 
         vector<double> out(nBins);
         for (int m = 0; m < nBins; m++)
@@ -351,33 +350,33 @@ TRestEvent *TRestRawSignalShapingProcess::ProcessEvent(TRestEvent *evInput)
         //     OutFile3.close();
         // }
 
-        // cout << "channel id :" << n << endl;
-        // TCanvas *c1 = new TCanvas(Form("c1_%d", n), Form("c1_%d", n), 800, 600);
-        // TGraph *graph1 = new TGraph(nBins, &x[0], &out[0]);
-        // graph1->SetTitle(" ");
-        // graph1->GetXaxis()->SetTitle("Time/s");
-        // graph1->GetYaxis()->SetTitle("U/mV");
-        // graph1->Draw("AL");
-        // c1->Draw();
-        // c1->SaveAs(Form("/home/rest/rest_workspace/TEST/signalshaping/SignalShaping_%d.png", n));
+        cout << "channel id :" << n << endl;
+        TCanvas *c1 = new TCanvas(Form("c1_%d", n), Form("c1_%d", n), 800, 600);
+        TGraph *graph1 = new TGraph(nBins, &x[0], &out[0]);
+        graph1->SetTitle(" ");
+        graph1->GetXaxis()->SetTitle("Time/s");
+        graph1->GetYaxis()->SetTitle("U/mV");
+        graph1->Draw("AL");
+        c1->Draw();
+        c1->SaveAs(Form("/home/rest/rest_workspace/TEST/signalshaping/SignalShaping_%d.png", n));
 
-        // TCanvas *c2 = new TCanvas(Form("c2_%d", n), Form("c2_%d", n), 800, 600);
-        // TGraph *graph2 = new TGraph(nBins, &x[0], &rsp[0]);
-        // graph2->SetTitle(Form("ResponseFunction_%d", n));
-        // graph2->GetXaxis()->SetTitle("Time");
-        // graph2->Draw("AL");
-        // c2->Draw();
-        // c2->SaveAs(Form("/home/rest/rest_workspace/TEST/signalshaping/ResponseFunction_%d.png", n));
+        TCanvas *c2 = new TCanvas(Form("c2_%d", n), Form("c2_%d", n), 800, 600);
+        TGraph *graph2 = new TGraph(nBins, &x[0], &rsp[0]);
+        graph2->SetTitle(Form("ResponseFunction_%d", n));
+        graph2->GetXaxis()->SetTitle("Time");
+        graph2->Draw("AL");
+        c2->Draw();
+        c2->SaveAs(Form("/home/rest/rest_workspace/TEST/signalshaping/ResponseFunction_%d.png", n));
 
-        // TCanvas *c3 = new TCanvas(Form("c3_%d", n), Form("c3_%d", n), 800, 600);
-        // TGraph *graph3 = new TGraph(nBins, &x[0], &M[0]);
-        // graph3->SetTitle(" ");
-        // graph3->GetXaxis()->SetTitle("Time(us)");
-        // graph3->GetXaxis()->SetRangeUser(0, 200);
-        // graph3->GetYaxis()->SetTitle("N");
-        // graph3->Draw("AL");
-        // c3->Draw();
-        // c3->SaveAs(Form("/home/rest/rest_workspace/TEST/Xe136 test/signal/Signal_%d.png", n));
+        TCanvas *c3 = new TCanvas(Form("c3_%d", n), Form("c3_%d", n), 800, 600);
+        TGraph *graph3 = new TGraph(nBins, &x[0], &M[0]);
+        graph3->SetTitle(" ");
+        graph3->GetXaxis()->SetTitle("Time(s)");
+        graph3->GetXaxis()->SetRangeUser(0, 2);
+        graph3->GetYaxis()->SetTitle("N");
+        graph3->Draw("AL");
+        c3->Draw();
+        c3->SaveAs(Form("/home/rest/rest_workspace/TEST/signalshaping/Signal_%d.png", n));
 
         for (int i = 0; i < nBins; i++)
         {
@@ -389,7 +388,6 @@ TRestEvent *TRestRawSignalShapingProcess::ProcessEvent(TRestEvent *evInput)
     }
 
     delete[] rsp;
-    
     // cout << "totalIons:" << totalIons << "<<!<<" << endl;
     // cout << "totalEnergy:" << totalEnergy << "<<!<<" << endl;
     // cout << "totalData:" << totalData << "<<!<<" << endl;

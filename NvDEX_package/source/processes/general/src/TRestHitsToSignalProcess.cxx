@@ -162,53 +162,60 @@ TRestEvent *TRestHitsToSignalProcess::ProcessEvent(TRestEvent *evInput)
 {
     fHitsEvent = (TRestHitsEvent *)evInput;
     fSignalEvent->SetEventInfo(fHitsEvent);
-    //     fHitsEvent = dynamic_cast<TRestHitsEvent*>(evInput);
     if (GetVerboseLevel() >= REST_Debug)
     {
         cout << "Number of hits : " << fHitsEvent->GetNumberOfHits() << endl;
         cout << "--------------------------" << endl;
     }
 
+    std::set<int> processedChannels;
     std::map<int, int> channelHitCountMap;
-    std::map<int, double> channelTmin;
-    std::map<int, double> channelTmax;
-    std::map<int, double> channelEnergySumMap;
 
     for (int hit = 0; hit < fHitsEvent->GetNumberOfHits(); hit++)
     {
         Double_t x = fHitsEvent->GetX(hit);
         Double_t y = fHitsEvent->GetY(hit);
         Double_t z = fHitsEvent->GetZ(hit);
-        Double_t t = fHitsEvent->GetTime(hit);
-        // cout<<x<<endl;
-        // cout<<y<<endl;
-        // cout<<z<<endl;
+        Double_t t = fHitsEvent->GetTime(hit);//ns
+        t = t /1000;//ns->us
 
         if (GetVerboseLevel() >= REST_Extreme && hit < 20)
             cout << "Hit : " << hit << " x : " << x << " y : " << y << " z : " << z << " t : " << t << endl;
+
         Int_t planeId = -1;
         Int_t moduleId = -1;
         Int_t channelId = -1;
         Int_t daqId = fReadout->GetHitsDaqChannel(TVector3(x, y, z), planeId, moduleId, channelId);
-        // cout<<fReadout->GetNumberOfReadoutPlanes()<<endl;
-        // cout<<fReadout->GetNumberOfModules()<<endl;
-        // cout<<fReadout->GetNumberOfChannels()<<endl;
-        // std::cout << "planeId =  "<< daqId <<"moduleId ="<< moduleId <<"channelId ="<< channelId << "daqId = "<< daqId<< std::endl;
+        // cout << "daqId: " << daqId << " for hit: " << hit << endl;
 
         if (daqId >= 0)
         {
+            // cout << "Inserting daqId: " << daqId << " into processedChannels" << endl;
+            processedChannels.insert(daqId);
             TRestReadoutPlane *plane = fReadout->GetReadoutPlaneWithID(planeId);
 
             Double_t energy = fHitsEvent->GetEnergy(hit);
 
             channelHitCountMap[daqId] += 1;
-            channelEnergySumMap[daqId] += energy;
 
-            Double_t time = plane->GetDistanceTo(x, y, z) / fDriftVelocity + t;
+            Double_t DriftVelocity = 0;
+
+            Int_t particle_type = fHitsEvent->Getparticle_type(hit);
+
+            if (particle_type == 0)
+            {
+                DriftVelocity = 0.000218923; // in mm/us
+            }
+            else
+            {
+                DriftVelocity = 0.000236305;
+
+            } // 0 is SeF6 , 1 is SeF5
+
+            Double_t time = plane->GetDistanceTo(x, y, z) / DriftVelocity + t;
 
             if (GetVerboseLevel() >= REST_Debug && hit < 20)
-                cout << "Module : " << moduleId << " Channel : " << channelId << " daq ID : " << daqId
-                     << endl;
+                cout << "Module : " << moduleId << " Channel : " << channelId << " daq ID : " << daqId << endl;
 
             if (GetVerboseLevel() >= REST_Debug && hit < 20)
                 cout << "Energy : " << energy << " time : " << time << endl;
@@ -223,74 +230,24 @@ TRestEvent *TRestHitsToSignalProcess::ProcessEvent(TRestEvent *evInput)
                 cout << "Drift velocity : " << fDriftVelocity << " mm/us" << endl;
 
             time = ((Int_t)(time / fSampling)) * fSampling; // now time is in unit "us", but dispersed
-            // std::cout << "time =  "<< time << std::endl;
-            // std::cout << "energy =  "<< energy << std::endl;
-
-            // 记录每个 channel 的最早和最晚 hit 时间
-            if (channelTmin.find(daqId) == channelTmin.end())
-            {
-                channelTmin[daqId] = time;
-                channelTmax[daqId] = time;
-            }
-            else
-            {
-                if (time < channelTmin[daqId])
-                    channelTmin[daqId] = time;
-                if (time > channelTmax[daqId])
-                    channelTmax[daqId] = time;
-            }
 
             fSignalEvent->AddChargeToSignal(daqId, time, energy);
         }
         else
         {
             if (GetVerboseLevel() >= REST_Debug)
-                cout << "readout channel not find for position (" << x << ", " << y << ", " << z << ")!"
-                     << endl;
+                cout << "readout channel not find for position (" << x << ", " << y << ", " << z << ")!" << endl;
         }
     }
 
-    // save each channel's hits
-    // std::ofstream hitCountOutFile("hit_count.txt", std::ios::app);
-    // int idx = 0;
-    // for (const auto &pair : channelHitCountMap)
-    // {
-    //     // pair.first = daqId, pair.second = hits
-    //     hitCountOutFile << idx << " " << pair.second << std::endl;
-    //     idx++;
-    // }
-    // hitCountOutFile.close();
+    // // save each channel's hits
+    //  std::ofstream hitCountOutFile("hit_count.txt", std::ios::app);
+    //  for (const auto &pair : channelHitCountMap)
+    //  {
+    //      hitCountOutFile << pair.second << std::endl;
+    //  }
+    //  hitCountOutFile.close();
 
-    // save each channel's width
-    // std::ofstream widthOutFile("channel_width.txt", std::ios::app);
-    // idx = 0;
-    // for (const auto &pair : channelTmin)
-    // {
-    //     int daqId = pair.first;
-    //     double width = channelTmax[daqId] - channelTmin[daqId];
-    //     widthOutFile << idx << " " << width << std::endl;
-    //     idx++;
-    // }
-    // widthOutFile.close();
-
-
-    // save each channel's energy
-    std::ofstream energyOutFile("channel_energy_sum.txt", std::ios::app);
-    int idxE = 0;
-    for (const auto &pair : channelEnergySumMap)
-    {
-        // pair.first = daqId, pair.second = total energy
-        energyOutFile << idxE << " " << pair.second << std::endl;
-        idxE++;
-    }
-    energyOutFile.close();
-    // save  channel's number
-    // std::ofstream activeChOutFile("active_channel_count.txt", std::ios::app);
-
-    // int nActiveChannels = channelHitCountMap.size();
-    // activeChOutFile << nActiveChannels << std::endl;
-
-    // activeChOutFile.close();
     // Add signals with value 0 for all channels that were not hit
     // int totalChannels = fReadout->GetNumberOfChannels();
     // // cout << "Number of processed channels: " << processedChannels.size() << endl;
@@ -310,8 +267,8 @@ TRestEvent *TRestHitsToSignalProcess::ProcessEvent(TRestEvent *evInput)
     // for (int daqId = 0; daqId < 1; daqId++)
     // {
     //     // cout << "processed channel: " << daqId << endl;
-    //     Double_t numberofIon = 5000;
-    //     Double_t L = 800;
+    //     Double_t numberofIon = 5000; 
+    //     Double_t L = 800;            
     //     Double_t E = numberofIon * 24.8 / 1000;
     //     for (int hit = 0; hit < numberofIon; hit++)
     //     {
@@ -372,15 +329,22 @@ TRestEvent *TRestHitsToSignalProcess::ProcessEvent(TRestEvent *evInput)
     //         fSignalEvent->AddChargeToSignal(daqId, time, energy);
     //     }
     // }
+
+
     fSignalEvent->SortSignals();
+
+    if (GetVerboseLevel() >= REST_Debug && fSignalEvent->GetNumberOfSignals() <= 0)
+    {
+        cout << "TRestHitsToSignalProcess: abnormal numbers of signals. ("
+             << fSignalEvent->GetNumberOfSignals() << ")" << endl;
+        return NULL;
+    }
 
     if (GetVerboseLevel() >= REST_Debug)
     {
-        cout << "TRestHitsToSignalProcess : Number of signals added : " << fSignalEvent->GetNumberOfSignals()
-             << endl;
+        cout << "TRestHitsToSignalProcess : Number of signals added : " << fSignalEvent->GetNumberOfSignals() << endl;
         cout << "TRestHitsToSignalProcess : Total signals integral : " << fSignalEvent->GetIntegral() << endl;
     }
-
     return fSignalEvent;
 }
 

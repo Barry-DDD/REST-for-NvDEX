@@ -1,3 +1,19 @@
+//////////////////////////////////////////////////////////////////////////
+///
+///
+///             RESTSoft : Software for Rare Event Searches with TPCs
+///
+///             TRestParticleSource.h
+///
+///             Class to store a particle definition
+///
+///             jul 2015:   First concept
+///                 Created as part of the conceptualization of existing REST
+///                 software.
+///                 J. Galan
+///
+//////////////////////////////////////////////////////////////////////////
+
 #ifndef RestCore_TRestParticleSource
 #define RestCore_TRestParticleSource
 
@@ -22,90 +38,22 @@ class TRestParticleSource : public TRestParticle {
     TString fAngularFilename;
     TString fAngularName;
 
-    // -----------------------------
-    // planeSector angular distribution parameters
-    // -----------------------------
-    TVector3 fPlaneNormal;  // plane normal
-    TVector3 fPlaneRef;     // reference direction in the plane (phi=0)
-    Double_t fPhiMin;       // radians (planeSector)
-    Double_t fPhiMax;       // radians (planeSector)
-
-    // -----------------------------
-    // angle angular distribution parameters (NEW)
-    // theta/phi范围定义 (球坐标) [radians]
-    // -----------------------------
-    Double_t fAngleThetaMin = 0.0;
-    Double_t fAngleThetaMax = 0.0;
-    Double_t fAnglePhiMin   = 0.0;
-    Double_t fAnglePhiMax   = 0.0;
-
    public:
-    // -----------------------------
-    // Basic getters
-    // -----------------------------
-    TString GetParticle() const { return fParticleName; }
-    TString GetAngularDistType() const { return fAngularDistType; }
-    TVector3 GetDirection() const { return fDirection; }
+    TString GetParticle() { return fParticleName; }
+    TString GetAngularDistType() { return fAngularDistType; }
+    TVector3 GetDirection() { return fDirection; }
+    TString GetEnergyDistType() { return fEnergyDistType; }
+    TVector2 GetEnergyRange() { return fEnergyRange; }
+    Double_t GetMinEnergy() { return fEnergyRange.X(); }
+    Double_t GetMaxEnergy() { return fEnergyRange.Y(); }
 
-    // -----------------------------
-    // planeSector getters
-    // -----------------------------
-    TVector3 GetPlaneNormal() const { return fPlaneNormal; }
-    TVector3 GetPlaneRef() const { return fPlaneRef; }
-    Double_t GetPhiMin() const { return fPhiMin; }
-    Double_t GetPhiMax() const { return fPhiMax; }
+    TString GetSpectrumFilename() { return fSpectrumFilename; }
+    TString GetSpectrumName() { return fSpectrumName; }
 
-    // -----------------------------
-    // angle getters (NEW)
-    // -----------------------------
-    Double_t GetAngleThetaMin() const { return fAngleThetaMin; }
-    Double_t GetAngleThetaMax() const { return fAngleThetaMax; }
-    Double_t GetAnglePhiMin() const { return fAnglePhiMin; }
-    Double_t GetAnglePhiMax() const { return fAnglePhiMax; }
+    TString GetAngularFilename() { return fAngularFilename; }
+    TString GetAngularName() { return fAngularName; }
 
-    // -----------------------------
-    // Energy getters
-    // -----------------------------
-    TString GetEnergyDistType() const { return fEnergyDistType; }
-    TVector2 GetEnergyRange() const { return fEnergyRange; }
-    Double_t GetMinEnergy() const { return fEnergyRange.X(); }
-    Double_t GetMaxEnergy() const { return fEnergyRange.Y(); }
-
-    // -----------------------------
-    // Spectrum getters
-    // -----------------------------
-    TString GetSpectrumFilename() const { return fSpectrumFilename; }
-    TString GetSpectrumName() const { return fSpectrumName; }
-
-    TString GetAngularFilename() const { return fAngularFilename; }
-    TString GetAngularName() const { return fAngularName; }
-
-    // -----------------------------
-    // Setters
-    // -----------------------------
     void SetAngularDistType(TString type) { fAngularDistType = type; }
-
-    // planeSector setters
-    void SetPlaneNormal(TVector3 n) { fPlaneNormal = n; }
-    void SetPlaneRef(TVector3 r) { fPlaneRef = r; }
-    void SetPhiMin(Double_t v) { fPhiMin = v; }
-    void SetPhiMax(Double_t v) { fPhiMax = v; }
-
-    // angle setters (NEW)
-    void SetAngleThetaRange(Double_t min, Double_t max)
-    {
-        if (min > max) { Double_t tmp = min; min = max; max = tmp; }
-        fAngleThetaMin = min;
-        fAngleThetaMax = max;
-    }
-
-    void SetAnglePhiRange(Double_t min, Double_t max)
-    {
-        if (min > max) { Double_t tmp = min; min = max; max = tmp; }
-        fAnglePhiMin = min;
-        fAnglePhiMax = max;
-    }
-
     void SetEnergyDistType(TString type) { fEnergyDistType = type; }
     void SetEnergyRange(TVector2 range) { fEnergyRange = range; }
 
@@ -117,10 +65,11 @@ class TRestParticleSource : public TRestParticle {
 
     void PrintParticleSource();
 
-    // Constructor / Destructor
+    // Construtor
     TRestParticleSource();
+    // Destructor
     virtual ~TRestParticleSource();
 
-    ClassDef(TRestParticleSource, 3);
+    ClassDef(TRestParticleSource, 2);
 };
 #endif

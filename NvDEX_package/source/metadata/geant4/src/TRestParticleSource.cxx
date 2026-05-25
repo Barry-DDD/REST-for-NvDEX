@@ -15,70 +15,47 @@
 ///                 J. Galan
 ///_______________________________________________________________________________
 
-// #include "TFile.h"
+//#include "TFile.h"
 
 #include "TRestParticleSource.h"
 #include "TRestStringOutput.h"
 using namespace std;
 
-REST_Verbose_Level fLevel = REST_Essential; //!
+REST_Verbose_Level fLevel = REST_Essential;  //!
 //	TRestLeveledOutput(REST_Verbose_Level& vref, string _color =
 // COLOR_RESET, string BorderOrHeader = "", REST_Display_Format style =
 // kBorderedLeft)
 TRestLeveledOutput<REST_Essential> metadata =
     TRestLeveledOutput<REST_Essential>(fLevel, COLOR_BOLDGREEN, "||",
-                                       (REST_Display_Format)kBorderedMiddle); //!
+                                       (REST_Display_Format)kBorderedMiddle);  //!
 
 ClassImp(TRestParticleSource)
     //______________________________________________________________________________
-    TRestParticleSource::TRestParticleSource()
-{
+    TRestParticleSource::TRestParticleSource() {
     // TRestParticleSource default constructor
-
-    // Defaults for planeSector
-    fPlaneNormal = TVector3(0, 0, 1); // xy plane
-    fPlaneRef = TVector3(1, 0, 0);    // phi=0 along +x
-    fPhiMin = 0.0;                    // rad
-    fPhiMax = 0.0;                    // rad
-
-    // Defaults for angle type (NEW)
-    fAngleThetaMin = 0.0;
-    fAngleThetaMax = 0.0;
-    fAnglePhiMin = 0.0; // rad
-    fAnglePhiMax = 0.0; // rad
 }
 
 //______________________________________________________________________________
-TRestParticleSource::~TRestParticleSource()
-{
+TRestParticleSource::~TRestParticleSource() {
     // TRestParticleSource destructor
 }
 
-void TRestParticleSource::PrintParticleSource()
-{
+void TRestParticleSource::PrintParticleSource() {
     metadata << "---------------------------------------" << endl;
     metadata << "Particle : " << GetParticle() << endl;
     metadata << "Charge : " << GetParticleCharge() << endl;
     metadata << "Angular distribution type : " << GetAngularDistType() << endl;
-    if (GetAngularDistType() == "TH1D")
-    {
+    if (GetAngularDistType() == "TH1D") {
         metadata << "Angular distribution filename : " << GetAngularFilename() << endl;
         metadata << "Angular histogram name  : " << GetAngularName() << endl;
     }
     metadata << "Direction : (" << GetDirection().X() << "," << GetDirection().Y() << ","
              << GetDirection().Z() << ")" << endl;
     metadata << "Energy distribution : " << GetEnergyDistType() << endl;
-    if (GetEnergyDistType() == "TH1D")
-    {
+    if (GetEnergyDistType() == "TH1D") {
         metadata << "Energy distribution filename : " << GetSpectrumFilename() << endl;
         metadata << "Energy histogram name  : " << GetSpectrumName() << endl;
     }
-    if (GetAngularDistType() == "angle")
-    {
-        metadata << "Angle range theta : (" << GetAngleThetaMin() << "," << GetAngleThetaMax() << ") rad" << endl;
-        metadata << "Angle range phi   : (" << GetAnglePhiMin() << "," << GetAnglePhiMax() << ") rad" << endl;
-    }
-
     if (GetEnergyRange().X() == GetEnergyRange().Y())
         metadata << "Energy : " << GetEnergy() << " keV" << endl;
     else

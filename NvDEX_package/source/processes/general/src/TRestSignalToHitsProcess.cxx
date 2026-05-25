@@ -224,55 +224,55 @@ TRestEvent *TRestSignalToHitsProcess::ProcessEvent(TRestEvent *evInput)
         Int_t signalID = sgnl->GetSignalID();
         Double_t Max_value = sgnl->GetMaxPeakValue();
         Double_t Pedestal = 0;
-        // for (int i = 0; i < 100; i++)
-        // {
-        //     Pedestal += sgnl->GetData(i) / 100;
-        // }
-        // Double_t Maxwithoutbaseline = Max_value - Pedestal;
+        for (int i = 0; i < 100; i++)
+        {
+            Pedestal += sgnl->GetData(i) / 100;
+        }
+        Double_t Maxwithoutbaseline = Max_value - Pedestal;
         // if (Maxwithoutbaseline < 7.5)
         //     continue;
         // countofchannel += 1;
         // cout << "Maxwithoutbaseline = " << Maxwithoutbaseline << endl;
-        // Int_t maxIndex = sgnl->GetMaxIndex(0, sgnl->GetNumberOfPoints());
-        // Int_t start = maxIndex - 500;
-        // Int_t end = maxIndex + 1000;
-        // if (start < 0)
-        //     start = 0;
-        // if (end > sgnl->GetNumberOfPoints())
-        //     end = sgnl->GetNumberOfPoints();
-        // TRestSignal *newSignal = new TRestSignal();
+        Int_t maxIndex = sgnl->GetMaxIndex(0, sgnl->GetNumberOfPoints());
+        Int_t start = maxIndex - 500;
+        Int_t end = maxIndex + 1000;
+        if (start < 0)
+            start = 0;
+        if (end > sgnl->GetNumberOfPoints())
+            end = sgnl->GetNumberOfPoints();
+        TRestSignal *newSignal = new TRestSignal();
         // for (int i = start; i < end; i++)
-        // for (int i = 0; i < 5000; i++)
-        // {
-        //     newSignal->AddPoint(i, sgnl->GetData(i));
-        // }
-        Int_t nBins = sgnl->GetNumberOfPoints();
+        for (int i = 0; i < 5000; i++)
+        {
+            newSignal->AddPoint(i, sgnl->GetData(i));
+        }
+        Int_t nBins = newSignal->GetNumberOfPoints();
         // cout << "points = " << nBins << endl;
 
-        // TRestFFT *fft = new TRestFFT();
+        TRestFFT *fft = new TRestFFT();
 
-        // fft->SetNfft(nBins);
+        fft->SetNfft(nBins);
 
-        // fft->ForwardSignalFFT(newSignal, 0, 0);
-        // double samplingRate = 250;   // 4ms 采样间隔，对应采样率 250Hz
-        // double maxFrequency = 10000; // 设定要关注的最大频率，比如100Hz
+        fft->ForwardSignalFFT(newSignal, 0, 0);
+        double samplingRate = 250;   // 4ms 采样间隔，对应采样率 250Hz
+        double maxFrequency = 10000; // 设定要关注的最大频率，比如100Hz
 
-        // int cutFrequencyHz = 50;                                       // 静态截止频率(Hz)
-        // int cutFrequencyIndex = cutFrequencyHz * nBins / samplingRate; // 转换为索引
-        // fft->ApplyLowPassFilter(cutFrequencyIndex);
+        int cutFrequencyHz = 50;                                       // 静态截止频率(Hz)
+        int cutFrequencyIndex = cutFrequencyHz * nBins / samplingRate; // 转换为索引
+        fft->ApplyLowPassFilter(cutFrequencyIndex);
 
-        // fft->BackwardFFT();
+        fft->BackwardFFT();
 
-        // fft->GetSignal(newSignal);
-        // delete fft;
-        // std::vector<double> time;
-        // std::vector<double> signal;
+        fft->GetSignal(newSignal);
+        delete fft;
+        std::vector<double> time;
+        std::vector<double> signal;
 
-        // for (int i = 0; i < nBins; i++)
-        // {
-        //     time.push_back(i * (1.0 / samplingRate)); // 时间轴
-        //     signal.push_back(newSignal->GetData(i));  // 滤波后的信号值
-        // }
+        for (int i = 0; i < nBins; i++)
+        {
+            time.push_back(i * (1.0 / samplingRate)); // 时间轴
+            signal.push_back(newSignal->GetData(i));  // 滤波后的信号值
+        }
 
         if (GetVerboseLevel() >= REST_Debug)
             cout << "Searching readout coordinates for signal ID : " << signalID << endl;
@@ -306,18 +306,17 @@ TRestEvent *TRestSignalToHitsProcess::ProcessEvent(TRestEvent *evInput)
             Double_t energy = 0;
             for (int i = 0; i < nBins; i++)
             {
-                energy += (sgnl->GetData(i)); //
+                energy += (sgnl->GetData(i) - Pedestal) / 428.4553928611088; // This value is the integral of the responce function  over the interval (0, 2500).
             }
             totalEnergy += energy;
             fHitsEvent->AddHit(x, y, z, energy, 0, 0, (Short_t)readoutModule, (Short_t)readoutChannel);
-            // cout<<"pixel energy = "<<energy<<endl;
         }
         else if (fSignalToHitMethod == "fitting")
         {
             std::vector<double> Sgl(nBins);
             for (int i = 0; i < nBins; i++)
             {
-                Sgl[i] = sgnl->GetData(i); // mV
+                Sgl[i] = (newSignal->GetData(i) - Pedestal); // mV
             }
             TH1D *hist1 = new TH1D("hist1", "hist1", Sgl.size(), 0, Sgl.size());
             for (int i = 0; i < Sgl.size(); i++)
@@ -639,7 +638,7 @@ TRestEvent *TRestSignalToHitsProcess::ProcessEvent(TRestEvent *evInput)
                 initialA1 = maxPeakValue / 3;
                 initialA2 = maxPeakValue;
 
-                initialt2 = sgnl->GetMaxPeakTime();;
+                initialt2 = maxIndex;
 
                 TF1 *fitFunc = new TF1("fitFunc", TRestSignalToHitsProcess::fitFunction, 0, 5000, 4);
                 TF1 *responseFunction = new TF1("responseFunction", "(1.0 - 1.0 / (TMath::Exp(x / 1e-05) + 1.0)) * TMath::Exp(-x / 300)", 0, 5000);
