@@ -1,0 +1,41 @@
+# --- Excluded directories (at any depth) ---
+old/
+logs/
+log/
+results/*/
+result/*/
+outputs/*/
+output/*/
+
+__pycache__/
+
+# --- Agent / Claude notes (at any depth) ---
+CLAUDE.md
+AGENT.md
+AGENTS.md
+
+# --- Python build / cache artifacts ---
+*.py[cod]
+*$py.class
+.ipynb_checkpoints/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# --- Editor / OS noise ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --- Large data / model artifacts ---
+*.root
+*.h5
+*.hdf5
+*.npz
+*.npy
+*.pt
+*.pth
+*.ckpt

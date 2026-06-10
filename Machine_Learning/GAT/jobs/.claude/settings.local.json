@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//public/home/liuz1/work/26.03.18_rest/test_example/tpc_gat/tpc_GAT/**)",
+      "Read(//public/home/liuz1/work/26.03.18_rest/test_example/tpc_gat/**)"
+    ]
+  }
+}
