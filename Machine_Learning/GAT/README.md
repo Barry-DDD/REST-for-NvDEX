@@ -58,18 +58,68 @@ tpc_gat/
 
 ## Environment
 
-The project runs on SCNC HPC cluster (CentOS 7).
+The project was developed on an HPC cluster running CentOS 7 (GLIBC 2.17),
+with modules provided through `miniconda3` and the GNU toolchain. Two separate
+environments are used:
 
 | Stage | Environment |
 | --- | --- |
-| ROOT extraction (`extract_*.C`) | REST + ROOT, loaded via `source ~/env_rest.sh` |
+| ROOT extraction (`extract_*.C`) | REST + ROOT 6.20.00 (with Geant4 / Garfield++) |
 | HDF5 conversion / merging       | Python + `h5py` + `uproot`, conda env `pyg-env` |
 | Training (`tpc_GAT/run.py`)     | Python + PyTorch + PyTorch Geometric, conda env `pyg-env` |
 
-Activate conda with:
+> The `env_rest.sh` and `env_conda.sh` scripts in this directory are
+> **examples of the author's site-specific setup** (absolute paths, module
+> names, and a pre-built REST install that are not portable). Use them only as
+> a reference for which components to load; reproduce the equivalent on your own
+> system as described below.
+
+### REST / ROOT environment (Stage 1)
+
+The ROOT extraction macros require a REST installation built against ROOT
+6.20.00, Geant4 10.2.3, and Garfield++. On the author's cluster these are loaded
+via environment modules and `thisroot.sh` / `geant4.sh` / `thisREST.sh`
+(see `env_rest.sh` for the exact layout). After sourcing, `restRoot` must be on
+`PATH`.
+
+### Python environment (`pyg-env`, Stages 1.2–2)
+
+A conda environment built around Python 3.11, PyTorch 2.4.0 (CUDA 12.4), and
+PyTorch Geometric. Python 3.12 is avoided because no `torch-scatter` wheel is
+published for the PyTorch 2.4 build. To reproduce it:
 
 ```bash
-source ~/env_conda.sh
+# Python 3.11 base (3.12 lacks a torch-scatter wheel for the pt24 build)
+conda create -n pyg-env -c conda-forge python=3.11 pip -y
+conda activate pyg-env
+
+# Scientific stack from conda-forge (no CUDA libraries here)
+conda install -c conda-forge -y mamba
+mamba install -c conda-forge -y \
+    numpy typing_extensions \
+    h5py uproot scipy matplotlib=3.8.3 scikit-learn scikit-image \
+    pandas seaborn tqdm boost-histogram scienceplots
+
+python -m pip install --upgrade pip
+
+# PyTorch 2.4.0 + CUDA 12.4 (manylinux2014 wheel, works on GLIBC 2.17 / CentOS 7)
+pip install torch==2.4.0 torchvision==0.19.0 torchaudio==2.4.0 \
+    --index-url https://download.pytorch.org/whl/cu124
+
+# PyG companion libraries (matching manylinux wheels)
+pip install pyg_lib torch_scatter torch_sparse torch_cluster torch_spline_conv \
+    -f https://data.pyg.org/whl/torch-2.4.0+cu124.html
+pip install torch-geometric
+
+# Verify
+python -c "import torch, torch_geometric; \
+print('torch:', torch.__version__, torch.version.cuda, torch.cuda.is_available()); \
+print('pyg:', torch_geometric.__version__)"
+```
+
+Then activate it for any Python stage:
+
+```bash
 conda activate pyg-env
 ```
 
@@ -82,14 +132,13 @@ Two macros are provided, depending on which simulation stage you want as input.
 **Full electronics simulation:**
 
 ```bash
-source ~/env_rest.sh
+# REST/ROOT environment must be loaded first (see Environment section)
 restRoot -b -q 'feature_extraction/extract_elecsim_hits.C("input.root","processed.root")'
 ```
 
 **Detector-level fine hits rebinned to a chosen readout pitch (mm):**
 
 ```bash
-source ~/env_rest.sh
 restRoot -b -q 'feature_extraction/extract_detsim_fine_hits_to_readout.C("input.root","processed.root",3.0)'
 ```
 
