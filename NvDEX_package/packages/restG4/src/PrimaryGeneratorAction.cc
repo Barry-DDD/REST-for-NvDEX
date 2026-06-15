@@ -63,14 +63,17 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event *anEvent)
   }
 
   Int_t nParticles = restG4Metadata->GetNumberOfPrimaries();
-
-  // Position is common for all particles
+  string generatorType = (string)restG4Metadata->GetGeneratorType();
 
   for (int j = 0; j < nParticles; j++)
   {
     // ParticleDefinition should be always declared first
     SetParticleDefinition(j);
-    SetParticlePosition(j);
+    // Spatial generators define one event origin shared by all primaries.
+    if (generatorType == "readfromfile" || j == 0)
+    {
+      SetParticlePosition(j);
+    }
 
     // Particle Direction must be always set before energy
     SetParticleEnergy(j);
@@ -87,12 +90,12 @@ void PrimaryGeneratorAction::SetParticleTime(int n)
   double time = 0;
   std::string type = (std::string)restG4Metadata->GetGeneratorType();
 
-  if (type == "readfromfile")
+  if (type == "readfromfile" || nCollections > 0)
   {
-    time = restG4Metadata->GetParticleSource(n).GetTime(); // 单位：s
+    time = restG4Metadata->GetParticleSource(n).GetTime(); // Time is stored in seconds.
   }
 
-  time *= 1e9; // 转换为ns， Geant4 默认单位是 ns
+  time *= 1e9; // Geant4 time unit is ns.
   fParticleGun->SetParticleTime(time);
   // std::cout << "Set particle time for particle " << n << " : " << time << " ns" << std::endl;
   if (restG4Metadata->GetVerboseLevel() >= REST_Debug)
