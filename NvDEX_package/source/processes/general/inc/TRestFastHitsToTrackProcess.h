@@ -12,6 +12,8 @@
 #ifndef RestCore_TRestFastHitsToTrackProcess
 #define RestCore_TRestFastHitsToTrackProcess
 
+#include "TString.h"
+
 #include <TRestEventProcess.h>
 #include <TRestHitsEvent.h>
 #include <TRestTrackEvent.h>

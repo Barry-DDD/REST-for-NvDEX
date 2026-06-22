@@ -1,6 +1,8 @@
 
 #ifndef RestCore_REST_StringHelper
 #define RestCore_REST_StringHelper
+
+#include "TString.h"
 #pragma once
 
 #include <stdio.h>

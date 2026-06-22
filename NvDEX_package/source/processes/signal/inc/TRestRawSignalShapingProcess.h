@@ -23,6 +23,8 @@
 #ifndef RestCore_TRestRawSignalShapingProcess
 #define RestCore_TRestRawSignalShapingProcess
 
+#include "TString.h"
+
 #include <TRestRawSignalEvent.h>
 
 #include "TRestEventProcess.h"

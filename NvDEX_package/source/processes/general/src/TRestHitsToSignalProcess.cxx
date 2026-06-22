@@ -13,6 +13,8 @@
 #include "TRestHitsToSignalProcess.h"
 #include "TRandom.h"
 
+#include <set>
+
 using namespace std;
 
 const double cmTomm = 10.;

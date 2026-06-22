@@ -13,6 +13,8 @@
 #ifndef RestCore_TRestRawSignalAnalysisProcess
 #define RestCore_TRestRawSignalAnalysisProcess
 
+#include "TString.h"
+
 #include <TH1D.h>
 
 //#include <TCanvas.h>

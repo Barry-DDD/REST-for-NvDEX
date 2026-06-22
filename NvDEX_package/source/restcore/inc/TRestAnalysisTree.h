@@ -18,6 +18,8 @@
 #ifndef RestCore_TRestAnalysisTree
 #define RestCore_TRestAnalysisTree
 
+#include "TString.h"
+
 #include "TRestEvent.h"
 
 #include "TTree.h"

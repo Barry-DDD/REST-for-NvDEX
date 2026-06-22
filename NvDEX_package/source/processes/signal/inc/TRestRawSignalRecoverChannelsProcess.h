@@ -23,6 +23,8 @@
 #ifndef RestCore_TRestRawSignalRecoverChannelsProcess
 #define RestCore_TRestRawSignalRecoverChannelsProcess
 
+#include "TString.h"
+
 #include "TRestRawSignalEvent.h"
 #include "TRestReadout.h"
 

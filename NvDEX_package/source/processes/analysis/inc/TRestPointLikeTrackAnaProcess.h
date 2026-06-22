@@ -12,6 +12,8 @@
 #ifndef RestCore_TRestPointLikeTrackAnaProcess
 #define RestCore_TRestPointLikeTrackAnaProcess
 
+#include "TString.h"
+
 #include <TRestTrackEvent.h>
 
 #include "TRestEventProcess.h"

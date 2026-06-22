@@ -12,6 +12,8 @@
 #ifndef RestCore_TRestRawSignalViewerProcess
 #define RestCore_TRestRawSignalViewerProcess
 
+#include "TString.h"
+
 #include <TH1D.h>
 
 //#include <TCanvas.h>

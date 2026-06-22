@@ -12,6 +12,8 @@
 #ifndef RestCore_TRestTrackReconnectionProcess
 #define RestCore_TRestTrackReconnectionProcess
 
+#include "TString.h"
+
 #include <TRestTrackEvent.h>
 #include "TRestEventProcess.h"
 

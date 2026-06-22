@@ -18,6 +18,8 @@
 #ifndef RestCore_TRestG4toHitsProcess
 #define RestCore_TRestG4toHitsProcess
 
+#include "TString.h"
+
 #include <TRestG4Event.h>
 #include <TRestG4Metadata.h>
 #include <TRestGas.h>

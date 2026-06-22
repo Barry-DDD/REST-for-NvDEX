@@ -12,6 +12,8 @@
 #ifndef RestCore_TRestSignalToHitsProcess
 #define RestCore_TRestSignalToHitsProcess
 
+#include "TString.h"
+
 #include <TRestGas.h>
 #include <TRestReadout.h>
 

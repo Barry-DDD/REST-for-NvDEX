@@ -2,6 +2,8 @@
 #ifndef TRestSoft_TRestHitsEvent
 #define TRestSoft_TRestHitsEvent
 
+#include "TString.h"
+
 #include <TGraph.h>
 
 #include <iostream>

@@ -23,6 +23,8 @@
 #ifndef RestCore_TRestRawSignalRemoveChannelsProcess
 #define RestCore_TRestRawSignalRemoveChannelsProcess
 
+#include "TString.h"
+
 #include <TRestRawSignalEvent.h>
 
 #include "TRestEventProcess.h"

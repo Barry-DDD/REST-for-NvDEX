@@ -14,6 +14,8 @@
 #ifndef RestCore_XQRestHitsToTrackProcess
 #define RestCore_XQRestHitsToTrackProcess
 
+#include "TString.h"
+
 #include <TRestHitsEvent.h>
 #include <TRestTrackEvent.h>
 #include "TRestEventProcess.h"

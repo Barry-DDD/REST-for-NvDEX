@@ -12,6 +12,8 @@
 #ifndef RestCore_TRestTrackReductionProcess
 #define RestCore_TRestTrackReductionProcess
 
+#include "TString.h"
+
 #include <TRestTrackEvent.h>
 #include "TRestEventProcess.h"
 

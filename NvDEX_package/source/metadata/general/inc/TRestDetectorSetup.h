@@ -15,6 +15,8 @@
 #ifndef RestCore_TRestDetectorSetup
 #define RestCore_TRestDetectorSetup
 
+#include "TString.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <cstdio>

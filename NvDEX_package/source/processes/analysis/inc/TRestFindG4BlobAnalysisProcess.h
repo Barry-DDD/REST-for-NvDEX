@@ -12,6 +12,8 @@
 #ifndef RestCore_TRestFindG4BlobAnalysisProcess
 #define RestCore_TRestFindG4BlobAnalysisProcess
 
+#include "TString.h"
+
 #include <TRestG4Event.h>
 #include <TRestG4Metadata.h>
 

@@ -12,6 +12,8 @@
 #ifndef RestCore_TRestFindResponseSignalProcess
 #define RestCore_TRestFindResponseSignalProcess
 
+#include "TString.h"
+
 #include <TRestRawSignalEvent.h>
 
 #include "TRestEventProcess.h"

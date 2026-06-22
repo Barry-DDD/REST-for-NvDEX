@@ -12,6 +12,8 @@
 #ifndef RestCore_TRestReadoutAnalysisProcess
 #define RestCore_TRestReadoutAnalysisProcess
 
+#include "TString.h"
+
 #include <TH1D.h>
 
 //#include <TCanvas.h>

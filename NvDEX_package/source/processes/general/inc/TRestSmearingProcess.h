@@ -16,6 +16,8 @@
 #ifndef RestCore_TRestSmearingProcess
 #define RestCore_TRestSmearingProcess
 
+#include "TString.h"
+
 #include <TRestGas.h>
 #include <TRestHitsEvent.h>
 

@@ -38,6 +38,12 @@ class TRestParticleSource : public TRestParticle {
     TString fAngularFilename;
     TString fAngularName;
 
+    TVector3 fPlaneNormal = TVector3(0, 0, 1);
+    TVector3 fPlaneRef = TVector3(1, 0, 0);
+    TVector2 fPlanePhiRange = TVector2(0, 0);
+    TVector2 fAngleThetaRange = TVector2(0, 0);
+    TVector2 fAnglePhiRange = TVector2(0, 0);
+
    public:
     TString GetParticle() { return fParticleName; }
     TString GetAngularDistType() { return fAngularDistType; }
@@ -52,6 +58,14 @@ class TRestParticleSource : public TRestParticle {
 
     TString GetAngularFilename() { return fAngularFilename; }
     TString GetAngularName() { return fAngularName; }
+    TVector3 GetPlaneNormal() { return fPlaneNormal; }
+    TVector3 GetPlaneRef() { return fPlaneRef; }
+    Double_t GetPhiMin() { return fPlanePhiRange.X(); }
+    Double_t GetPhiMax() { return fPlanePhiRange.Y(); }
+    Double_t GetAngleThetaMin() { return fAngleThetaRange.X(); }
+    Double_t GetAngleThetaMax() { return fAngleThetaRange.Y(); }
+    Double_t GetAnglePhiMin() { return fAnglePhiRange.X(); }
+    Double_t GetAnglePhiMax() { return fAnglePhiRange.Y(); }
 
     void SetAngularDistType(TString type) { fAngularDistType = type; }
     void SetEnergyDistType(TString type) { fEnergyDistType = type; }
@@ -62,6 +76,14 @@ class TRestParticleSource : public TRestParticle {
 
     void SetAngularFilename(TString angFilename) { fAngularFilename = angFilename; }
     void SetAngularName(TString angName) { fAngularName = angName; }
+    void SetPlaneNormal(const TVector3& normal) { fPlaneNormal = normal; }
+    void SetPlaneRef(const TVector3& ref) { fPlaneRef = ref; }
+    void SetPhiMin(Double_t phi) { fPlanePhiRange = TVector2(phi, fPlanePhiRange.Y()); }
+    void SetPhiMax(Double_t phi) { fPlanePhiRange = TVector2(fPlanePhiRange.X(), phi); }
+    void SetAngleThetaRange(Double_t minTheta, Double_t maxTheta) {
+        fAngleThetaRange = TVector2(minTheta, maxTheta);
+    }
+    void SetAnglePhiRange(Double_t minPhi, Double_t maxPhi) { fAnglePhiRange = TVector2(minPhi, maxPhi); }
 
     void PrintParticleSource();
 
@@ -70,6 +92,6 @@ class TRestParticleSource : public TRestParticle {
     // Destructor
     virtual ~TRestParticleSource();
 
-    ClassDef(TRestParticleSource, 2);
+    ClassDef(TRestParticleSource, 3);
 };
 #endif

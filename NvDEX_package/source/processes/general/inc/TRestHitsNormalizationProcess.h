@@ -16,6 +16,8 @@
 #ifndef RestCore_TRestHitsNormalizationProcess
 #define RestCore_TRestHitsNormalizationProcess
 
+#include "TString.h"
+
 #include <TRestHitsEvent.h>
 
 #include "TRestEventProcess.h"

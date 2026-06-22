@@ -22,6 +22,8 @@
 #ifndef RestCore_TRestRawToSignalProcess
 #define RestCore_TRestRawToSignalProcess
 
+#include "TString.h"
+
 #include <TRestDetectorSetup.h>
 #include "TRestEventProcess.h"
 #include "TRestRawSignalEvent.h"

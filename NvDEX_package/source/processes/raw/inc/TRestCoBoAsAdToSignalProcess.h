@@ -22,6 +22,8 @@
 #ifndef RestCore_TRestCoBoAsAdToSignalProcess
 #define RestCore_TRestCoBoAsAdToSignalProcess
 
+#include "TString.h"
+
 #include "TRestRawToSignalProcess.h"
 #include "TRestSignalEvent.h"
 

@@ -15,6 +15,8 @@
 #ifndef RestCore_TRestG4EventViewer
 #define RestCore_TRestG4EventViewer
 
+#include "TString.h"
+
 #include "TRestEveEventViewer.h"
 
 #include "TRestG4Event.h"

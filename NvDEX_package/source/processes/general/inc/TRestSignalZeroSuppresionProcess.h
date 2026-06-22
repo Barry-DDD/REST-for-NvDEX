@@ -12,6 +12,8 @@
 #ifndef RestCore_TRestSignalZeroSuppresionProcess
 #define RestCore_TRestSignalZeroSuppresionProcess
 
+#include "TString.h"
+
 #include <TRestGas.h>
 #include <TRestReadout.h>
 

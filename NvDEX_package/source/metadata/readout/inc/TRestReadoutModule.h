@@ -23,6 +23,8 @@
 #ifndef RestCore_TRestReadoutModule
 #define RestCore_TRestReadoutModule
 
+#include "TString.h"
+
 #include <iostream>
 
 #include <TMath.h>

@@ -16,6 +16,8 @@
 #ifndef RestCore_TRestAvalancheProcess
 #define RestCore_TRestAvalancheProcess
 
+#include "TString.h"
+
 #include <TRestGas.h>
 #include <TRestHitsEvent.h>
 

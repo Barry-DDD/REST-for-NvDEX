@@ -22,6 +22,8 @@
 #ifndef RestDAQ_TRest2DHitsEvent
 #define RestDAQ_TRest2DHitsEvent
 
+#include "TString.h"
+
 #include <iostream>
 
 #include <TAxis.h>

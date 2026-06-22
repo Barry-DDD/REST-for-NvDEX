@@ -19,6 +19,8 @@
 #ifndef RestDAQ_TRestTrackEvent
 #define RestDAQ_TRestTrackEvent
 
+#include "TString.h"
+
 #include <iostream>
 
 #include <TAxis.h>

@@ -22,6 +22,8 @@
 #ifndef RestCore_TRestMultiFEMINOSToSignalProcess
 #define RestCore_TRestMultiFEMINOSToSignalProcess
 
+#include "TString.h"
+
 #include "TRestRawToSignalProcess.h"
 #include "TRestSignalEvent.h"
 

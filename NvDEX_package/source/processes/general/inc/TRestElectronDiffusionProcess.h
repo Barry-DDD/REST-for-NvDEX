@@ -12,6 +12,8 @@
 #ifndef RestCore_TRestElectronDiffusionProcess
 #define RestCore_TRestElectronDiffusionProcess
 
+#include "TString.h"
+
 #include <TRandom3.h>
 #include <TRestGas.h>
 #include <TRestHitsEvent.h>

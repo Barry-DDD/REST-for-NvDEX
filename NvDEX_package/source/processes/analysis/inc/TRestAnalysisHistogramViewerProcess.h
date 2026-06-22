@@ -12,6 +12,8 @@
 #ifndef RestCore_TRestAnalysisHistogramViewerProcess
 #define RestCore_TRestAnalysisHistogramViewerProcess
 
+#include "TString.h"
+
 #include <TRestTrackEvent.h>
 
 #include "TCanvas.h"

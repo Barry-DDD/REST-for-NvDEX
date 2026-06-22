@@ -12,6 +12,8 @@
 #ifndef RestCore_TRestFiducializationProcess
 #define RestCore_TRestFiducializationProcess
 
+#include "TString.h"
+
 #include <TRestHitsEvent.h>
 #include <TRestReadout.h>
 

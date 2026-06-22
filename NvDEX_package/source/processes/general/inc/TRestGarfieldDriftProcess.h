@@ -15,6 +15,8 @@
 #ifndef RestCore_TRestGarfieldDriftProcess
 #define RestCore_TRestGarfieldDriftProcess
 
+#include "TString.h"
+
 #include <TRestGas.h>
 
 #if defined USE_Garfield

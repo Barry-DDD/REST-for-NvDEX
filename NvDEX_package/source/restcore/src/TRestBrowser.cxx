@@ -30,7 +30,7 @@
 using namespace std;
 //______________________________________________________________________________
 TRestBrowser::TRestBrowser() {
-    if (gDirectory != NULL && gDirectory->GetFile() != NULL) {
+    if (gDirectory && gDirectory->GetFile() != nullptr) {
         Initialize();
         SetViewer("TRestGenericEventViewer");
         OpenFile(gDirectory->GetFile()->GetName());

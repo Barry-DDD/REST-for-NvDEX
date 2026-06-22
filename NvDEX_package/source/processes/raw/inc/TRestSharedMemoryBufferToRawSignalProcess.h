@@ -23,6 +23,8 @@
 #ifndef RestCore_TRestSharedMemoryBufferToRawSignalProcess
 #define RestCore_TRestSharedMemoryBufferToRawSignalProcess
 
+#include "TString.h"
+
 #include "TRestEventProcess.h"
 #include "TRestRawSignalEvent.h"
 

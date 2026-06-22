@@ -15,6 +15,8 @@
 #ifndef RestCore_XQRestGaussianSharpeningProcess
 #define RestCore_XQRestGaussianSharpeningProcess
 
+#include "TString.h"
+
 #include <TRestHitsEvent.h>
 #include <TRestGas.h>
 #include "TRestEventProcess.h"

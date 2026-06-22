@@ -15,6 +15,8 @@
 #ifndef RestCore_XQRestZaxisClusterProcess
 #define RestCore_XQRestZaxisClusterProcess
 
+#include "TString.h"
+
 #include <TRestHitsEvent.h>
 #include <TRestGas.h>
 #include "TRestEventProcess.h"

@@ -12,6 +12,8 @@
 #ifndef RestCore_TRestPointLikeAnaProcess
 #define RestCore_TRestPointLikeAnaProcess
 
+#include "TString.h"
+
 #include <TRestSignalEvent.h>
 #include "TRestReadout.h"
 

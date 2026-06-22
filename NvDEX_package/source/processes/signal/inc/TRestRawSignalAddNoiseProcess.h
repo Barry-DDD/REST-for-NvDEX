@@ -12,6 +12,8 @@
 #ifndef RestCore_TRestRawSignalAddNoiseProcess
 #define RestCore_TRestRawSignalAddNoiseProcess
 
+#include "TString.h"
+
 #include <TRestRawSignalEvent.h>
 
 #include "TRestEventProcess.h"

@@ -1,6 +1,8 @@
 #ifndef RestCore_TRestProcessRunner
 #define RestCore_TRestProcessRunner
 
+#include "TString.h"
+
 #include <mutex>
 #include <thread>
 #include "TRestAnalysisTree.h"

@@ -15,6 +15,8 @@
 #ifndef RestCore_XQRestRasterisationProcess
 #define RestCore_XQRestRasterisationProcess
 
+#include "TString.h"
+
 #include <TRestHitsEvent.h>
 #include <TRestGas.h>
 #include "TRestEventProcess.h"

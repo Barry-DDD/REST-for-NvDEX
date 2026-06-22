@@ -12,6 +12,8 @@
 #ifndef RestCore_TRestSignalChannelActivityProcess
 #define RestCore_TRestSignalChannelActivityProcess
 
+#include "TString.h"
+
 #include <TH1D.h>
 
 #include <TRestReadout.h>

@@ -23,6 +23,8 @@
 #ifndef RestCore_TRestMetadata
 #define RestCore_TRestMetadata
 
+#include "TString.h"
+
 #include "TRestVersion.h"
 
 #include "TRestStringHelper.h"

@@ -12,6 +12,8 @@
 #ifndef RestCore_TRestFindTrackBlobsProcess
 #define RestCore_TRestFindTrackBlobsProcess
 
+#include "TString.h"
+
 #include <TRestTrackEvent.h>
 
 #include "TRestEventProcess.h"

@@ -12,6 +12,8 @@
 #ifndef RestCore_TRestTriggerAnalysisProcess
 #define RestCore_TRestTriggerAnalysisProcess
 
+#include "TString.h"
+
 #include <TH1D.h>
 
 #include <TRestGas.h>

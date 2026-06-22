@@ -18,6 +18,8 @@
 #ifndef RestDAQ_TRestLinearTrackEvent
 #define RestDAQ_TRestLinearTrackEvent
 
+#include "TString.h"
+
 #include <iostream>
 
 #include <TH1D.h>

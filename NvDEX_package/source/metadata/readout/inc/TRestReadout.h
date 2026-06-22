@@ -23,6 +23,8 @@
 #ifndef RestCore_TRestReadout
 #define RestCore_TRestReadout
 
+#include "TString.h"
+
 #include <iostream>
 
 #include "TObject.h"

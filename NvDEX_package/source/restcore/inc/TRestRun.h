@@ -2,6 +2,8 @@
 #ifndef RestCore_TRestRun
 #define RestCore_TRestRun
 
+#include "TString.h"
+
 #define REST_MAXIMUM_EVENTS 2E9
 
 #include "TFile.h"

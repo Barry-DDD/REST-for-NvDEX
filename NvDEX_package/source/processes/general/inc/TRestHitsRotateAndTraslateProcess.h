@@ -16,6 +16,8 @@
 #ifndef RestCore_TRestHitsRotateAndTraslateProcess
 #define RestCore_TRestHitsRotateAndTraslateProcess
 
+#include "TString.h"
+
 #include <TRestGas.h>
 #include <TRestHitsEvent.h>
 

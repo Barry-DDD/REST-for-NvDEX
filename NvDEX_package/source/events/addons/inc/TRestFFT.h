@@ -18,6 +18,8 @@
 #ifndef RestCore_TRestFFT
 #define RestCore_TRestFFT
 
+#include "TString.h"
+
 #include <iostream>
 
 #include <TArrayD.h>

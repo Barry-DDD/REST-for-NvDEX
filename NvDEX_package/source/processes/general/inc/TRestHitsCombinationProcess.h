@@ -12,6 +12,8 @@
 #ifndef RestCore_TRestHitsCombinationProcess
 #define RestCore_TRestHitsCombinationProcess
 
+#include "TString.h"
+
 #include <TRestHitsEvent.h>
 #include <TRestSignalEvent.h>
 #include <TRestRawSignalEvent.h>

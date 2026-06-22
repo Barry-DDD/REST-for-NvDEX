@@ -12,6 +12,8 @@
 #ifndef RestCore_TRestHitsShuffleProcess
 #define RestCore_TRestHitsShuffleProcess
 
+#include "TString.h"
+
 #include <TRestHitsEvent.h>
 #include "TRestEventProcess.h"
 

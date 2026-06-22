@@ -1,6 +1,8 @@
 #ifndef RestCore_TRestTask
 #define RestCore_TRestTask
 
+#include "TString.h"
+
 #include "TCanvas.h"
 #include "TF1.h"
 #include "TGeoManager.h"

@@ -23,6 +23,8 @@
 #ifndef RestCore_TRestGeant4AnalysisProcess
 #define RestCore_TRestGeant4AnalysisProcess
 
+#include "TString.h"
+
 #include <TRestG4Event.h>
 #include <TRestG4Metadata.h>
 #include <TRestGas.h>

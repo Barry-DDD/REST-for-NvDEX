@@ -18,6 +18,8 @@
 #ifndef RestCore_TRestG4Event
 #define RestCore_TRestG4Event
 
+#include "TString.h"
+
 #include <iostream>
 
 #include <TGraph.h>

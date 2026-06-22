@@ -49,6 +49,17 @@ void TRestParticleSource::PrintParticleSource() {
         metadata << "Angular distribution filename : " << GetAngularFilename() << endl;
         metadata << "Angular histogram name  : " << GetAngularName() << endl;
     }
+    if (GetAngularDistType() == "planeSector") {
+        metadata << "Plane normal : (" << GetPlaneNormal().X() << "," << GetPlaneNormal().Y() << ","
+                 << GetPlaneNormal().Z() << ")" << endl;
+        metadata << "Plane reference : (" << GetPlaneRef().X() << "," << GetPlaneRef().Y() << ","
+                 << GetPlaneRef().Z() << ")" << endl;
+        metadata << "Plane phi range : (" << GetPhiMin() << "," << GetPhiMax() << ")" << endl;
+    }
+    if (GetAngularDistType() == "angle") {
+        metadata << "Theta range : (" << GetAngleThetaMin() << "," << GetAngleThetaMax() << ")" << endl;
+        metadata << "Phi range : (" << GetAnglePhiMin() << "," << GetAnglePhiMax() << ")" << endl;
+    }
     metadata << "Direction : (" << GetDirection().X() << "," << GetDirection().Y() << ","
              << GetDirection().Z() << ")" << endl;
     metadata << "Energy distribution : " << GetEnergyDistType() << endl;

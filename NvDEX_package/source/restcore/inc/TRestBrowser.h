@@ -1,6 +1,8 @@
 #ifndef RestCore_TRestBrowser
 #define RestCore_TRestBrowser
 
+#include "TString.h"
+
 #include "TApplication.h"
 #include "TBrowser.h"
 #include "TCanvas.h"

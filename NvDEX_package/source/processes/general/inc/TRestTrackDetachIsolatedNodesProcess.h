@@ -12,6 +12,8 @@
 #ifndef RestCore_TRestTrackDetachIsolatedNodesProcess
 #define RestCore_TRestTrackDetachIsolatedNodesProcess
 
+#include "TString.h"
+
 #include <TRestTrackEvent.h>
 #include "TRestEventProcess.h"
 

@@ -12,6 +12,8 @@
 #ifndef RestCore_TRestAnalysisPlot
 #define RestCore_TRestAnalysisPlot
 
+#include "TString.h"
+
 #include <TRestRun.h>
 #include "TCanvas.h"
 #include "TH3D.h"

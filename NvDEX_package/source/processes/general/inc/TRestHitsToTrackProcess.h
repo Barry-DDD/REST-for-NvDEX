@@ -12,6 +12,8 @@
 #ifndef RestCore_TRestHitsToTrackProcess
 #define RestCore_TRestHitsToTrackProcess
 
+#include "TString.h"
+
 #include <TRestHitsEvent.h>
 #include <TRestTrackEvent.h>
 #include "TMatrixD.h"

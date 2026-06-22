@@ -19,6 +19,8 @@
 #ifndef RestDAQ_TRestSignalEvent
 #define RestDAQ_TRestSignalEvent
 
+#include "TString.h"
+
 #include <iostream>
 
 #include <TArrayD.h>
