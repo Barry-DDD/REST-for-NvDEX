@@ -134,7 +134,7 @@ G4ParticleDefinition *PrimaryGeneratorAction::SetParticleDefinition(int n)
       {
         //   cout << "Ion name : " << G4IonTable::GetIonTable()->GetIonName ( Z,
         //   A ) << endl;
-        if (particleName == G4IonTable::GetIonTable()->GetIonName(Z, A))
+        if (particleName == string(G4IonTable::GetIonTable()->GetIonName(Z, A)))
         {
           particle = G4IonTable::GetIonTable()->GetIon(Z, A, eenergy);
           fParticleGun->SetParticleCharge(charge);
