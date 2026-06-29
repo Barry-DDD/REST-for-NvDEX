@@ -350,33 +350,35 @@ TRestEvent *TRestRawSignalShapingProcess::ProcessEvent(TRestEvent *evInput)
         //     OutFile3.close();
         // }
 
-        cout << "channel id :" << n << endl;
-        TCanvas *c1 = new TCanvas(Form("c1_%d", n), Form("c1_%d", n), 800, 600);
-        TGraph *graph1 = new TGraph(nBins, &x[0], &out[0]);
-        graph1->SetTitle(" ");
-        graph1->GetXaxis()->SetTitle("Time/s");
-        graph1->GetYaxis()->SetTitle("U/mV");
-        graph1->Draw("AL");
-        c1->Draw();
-        c1->SaveAs(Form("/home/rest/rest_workspace/TEST/signalshaping/SignalShaping_%d.png", n));
+        if (GetVerboseLevel() >= REST_Debug) {
+            cout << "channel id :" << n << endl;
+            TCanvas *c1 = new TCanvas(Form("c1_%d", n), Form("c1_%d", n), 800, 600);
+            TGraph *graph1 = new TGraph(nBins, &x[0], &out[0]);
+            graph1->SetTitle(" ");
+            graph1->GetXaxis()->SetTitle("Time/s");
+            graph1->GetYaxis()->SetTitle("U/mV");
+            graph1->Draw("AL");
+            c1->Draw();
+            c1->SaveAs(Form("/home/rest/rest_workspace/TEST/signalshaping/SignalShaping_%d.png", n));
 
-        TCanvas *c2 = new TCanvas(Form("c2_%d", n), Form("c2_%d", n), 800, 600);
-        TGraph *graph2 = new TGraph(nBins, &x[0], &rsp[0]);
-        graph2->SetTitle(Form("ResponseFunction_%d", n));
-        graph2->GetXaxis()->SetTitle("Time");
-        graph2->Draw("AL");
-        c2->Draw();
-        c2->SaveAs(Form("/home/rest/rest_workspace/TEST/signalshaping/ResponseFunction_%d.png", n));
+            TCanvas *c2 = new TCanvas(Form("c2_%d", n), Form("c2_%d", n), 800, 600);
+            TGraph *graph2 = new TGraph(nBins, &x[0], &rsp[0]);
+            graph2->SetTitle(Form("ResponseFunction_%d", n));
+            graph2->GetXaxis()->SetTitle("Time");
+            graph2->Draw("AL");
+            c2->Draw();
+            c2->SaveAs(Form("/home/rest/rest_workspace/TEST/signalshaping/ResponseFunction_%d.png", n));
 
-        TCanvas *c3 = new TCanvas(Form("c3_%d", n), Form("c3_%d", n), 800, 600);
-        TGraph *graph3 = new TGraph(nBins, &x[0], &M[0]);
-        graph3->SetTitle(" ");
-        graph3->GetXaxis()->SetTitle("Time(s)");
-        graph3->GetXaxis()->SetRangeUser(0, 2);
-        graph3->GetYaxis()->SetTitle("N");
-        graph3->Draw("AL");
-        c3->Draw();
-        c3->SaveAs(Form("/home/rest/rest_workspace/TEST/signalshaping/Signal_%d.png", n));
+            TCanvas *c3 = new TCanvas(Form("c3_%d", n), Form("c3_%d", n), 800, 600);
+            TGraph *graph3 = new TGraph(nBins, &x[0], &M[0]);
+            graph3->SetTitle(" ");
+            graph3->GetXaxis()->SetTitle("Time(s)");
+            graph3->GetXaxis()->SetRangeUser(0, 2);
+            graph3->GetYaxis()->SetTitle("N");
+            graph3->Draw("AL");
+            c3->Draw();
+            c3->SaveAs(Form("/home/rest/rest_workspace/TEST/signalshaping/Signal_%d.png", n));
+        }
 
         for (int i = 0; i < nBins; i++)
         {

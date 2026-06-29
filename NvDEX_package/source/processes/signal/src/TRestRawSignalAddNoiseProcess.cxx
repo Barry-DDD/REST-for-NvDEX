@@ -112,8 +112,7 @@ TRestEvent* TRestRawSignalAddNoiseProcess::ProcessEvent(TRestEvent* evInput) {
         
 
 
-        // if (n<50)
-        // {   
+        if (GetVerboseLevel() >= REST_Debug) {
             TCanvas *c1 = new TCanvas(Form("c1_%d", n), Form("c1_%d", n), 800, 600);
             TGraph *graph1 = new TGraph(nBins, &x[0], &out[0]);
             graph1->SetTitle(" ");
@@ -124,7 +123,7 @@ TRestEvent* TRestRawSignalAddNoiseProcess::ProcessEvent(TRestEvent* evInput) {
             graph1->Draw("AL");
             c1->Draw();
             c1->SaveAs(Form("/home/rest/rest_workspace/TEST/signalshaping/SignalAddnoise_%d.png", n));
-        // }
+        }
 
     }
 

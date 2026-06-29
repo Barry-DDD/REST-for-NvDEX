@@ -201,6 +201,12 @@
         <element name="Xenon" formula="Xe" Z="54" state="gas">
             <atom value="131.293" />
         </element>
+        <isotope N="136" Z="54" name="Xe136Iso">
+            <atom unit="g/mole" value="135.907214484" />
+        </isotope>
+        <element name="Xenon136" formula="Xe" state="gas">
+            <fraction n="1" ref="Xe136Iso" />
+        </element>
         <element name="Argon" formula="Ar" Z="18" state="gas">
             <atom value="39.948" />
         </element>
@@ -275,6 +281,17 @@
             <P unit="bar" value="10*1.01325" />
             <composite n="1" ref="Selenium" />
             <composite n="6" ref="Fluor" />
+        </material>
+
+        <material name="Xe136TMA1Pct10atm" state="gas">
+            <!-- Ideal-gas density for 99 mol% Xe-136 + 1 mol% TMA at 10 atm and 293.15 K. -->
+            <D unit="g/cm3" value="0.05617900" />
+            <T unit="K" value="293.15" />
+            <P unit="bar" value="10*1.01325" />
+            <composite n="99" ref="Xenon136" />
+            <composite n="3" ref="Carbon" />
+            <composite n="9" ref="Hydrogen" />
+            <composite n="1" ref="Nitrogen" />
         </material>
 
 
@@ -715,7 +732,7 @@
     </volume>
 
     <volume name="gasVolume">
-        <materialref ref="SeF6"/>
+        <materialref ref="Xe136TMA1Pct10atm"/>
         <solidref ref="fSolidAbsorber"/>
     </volume>
 

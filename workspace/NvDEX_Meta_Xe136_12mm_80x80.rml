@@ -2,7 +2,7 @@
 
 <TRestManager verboseLevel="silent">
   <globals>
-    <parameter name="outputFileName" value="NvDEX_Xe136_8mm.root" />
+    <parameter name="outputFileName" value="NvDEX_Xe136_12mm_80x80.root" />
     <searchPath value="${REST_INPUTDATA}/definitions/"/>
 
     <!-- hex pixel side length -->

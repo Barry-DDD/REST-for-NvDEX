@@ -228,7 +228,7 @@
     </volume>
 
     <volume name="gasVolume">
-        <materialref ref="SeF6"/>
+        <materialref ref="Xe136TMA1Pct10atm"/>
         <solidref ref="fSolidAbsorber"/>
     </volume>
 
