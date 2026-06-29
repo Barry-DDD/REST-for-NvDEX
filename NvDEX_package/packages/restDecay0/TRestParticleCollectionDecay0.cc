@@ -98,6 +98,7 @@ void TRestParticleCollectionDecay0::InitFromConfigFile() {
   fParentName = GetParameter("particle");
   fDecayType = GetParameter("decayMode");
   fDaugherLevel = StringToInteger(GetParameter("daughterLevel"));
+  fDbdMode = StringToInteger(GetParameter("dbdMode", "0"));
 
   fDecay0Model.set_decay_category(
       bxdecay0::decay0_generator::DECAY_CATEGORY_DBD);
@@ -115,7 +116,10 @@ void TRestParticleCollectionDecay0::InitFromConfigFile() {
 
   fDecay0Model.set_decay_dbd_level(fDaugherLevel);
 
-  if (fDecayType == "2vbb") {
+  if (fDbdMode > 0) {
+    fDecay0Model.set_decay_dbd_mode(
+        static_cast<bxdecay0::dbd_mode_type>(fDbdMode));
+  } else if (fDecayType == "2vbb") {
     if (fDaugherLevel == 0 || fDaugherLevel == 3) {
       fDecay0Model.set_decay_dbd_mode(bxdecay0::MODEBB_4);
     } else if (fDaugherLevel == 1 || fDaugherLevel == 2) {

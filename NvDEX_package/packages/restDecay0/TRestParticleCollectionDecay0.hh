@@ -27,6 +27,7 @@ protected:
 	string fDecayType;
 
 	int fDaugherLevel;
+	int fDbdMode;
 
 public:
 
@@ -39,7 +40,7 @@ public:
 	virtual void RemoveParticles() { fParticles.clear(); }
 	virtual void AddParticle(TRestParticle ptcle) { fParticles.push_back(ptcle); }
 
-	TRestParticleCollectionDecay0() : generator((uintptr_t)this), prng(generator) {
+	TRestParticleCollectionDecay0() : generator((uintptr_t)this), prng(generator), fDbdMode(0) {
 	}
 
 	ClassDef(TRestParticleCollectionDecay0, 1);
