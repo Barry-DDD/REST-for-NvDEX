@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<TRestManager name="PhaseCSignalXeTMA" title="Phase C slim G4 to signal chain">
+  <TRestRun name="Run metadata" title="Phase C slim signal sample">
+    <parameter name="experiment" value="NvDEX"/>
+    <parameter name="runType" value="simulation"/>
+    <parameter name="runNumber" value="8701"/>
+    <parameter name="runTag" value="phaseC_signal_xetma1pct10atm"/>
+    <parameter name="runDescription" value="Phase C prep slim signal-level charge cloud"/>
+    <parameter name="user" value="${USER}"/>
+    <parameter name="verboseLevel" value="1"/>
+    <parameter name="outputFile" value="phaseC_mode1_signal_slim.root" />
+    <addMetadata type="TRestReadout" name="pixelReadout" file="/lustrefs/juno26/users/wuwenjie/rest/data/task8/phaseC/readout/NvDEX_Xe136_12mm_80x80.root"/>
+    <addMetadata type="TRestGas" name="Xenon-TMA 1Pct 10atm 10-10E3Vcm" file="/lustrefs/juno26/users/wuwenjie/rest/data/task8/phaseC/gas/xetma_1pct_10atm_full_transport.root"/>
+  </TRestRun>
+
+  <TRestProcessRunner name="PhaseCSignalRunner" verboseLevel="info">
+    <parameter name="eventsToProcess" value="200" />
+    <parameter name="threadNumber" value="1"/>
+    <parameter name="inputAnalysis" value="off"/>
+    <parameter name="inputEvent" value="off"/>
+    <parameter name="outputEvent" value="on"/>
+
+    <addProcess type="TRestGeant4AnalysisProcess" name="g4Ana" value="ON">
+      <observable name="GasVolumeEDep" value="ON" />
+      <observable name="totalEdep" value="ON" />
+      <observable name="e-TrackCounter" value="ON" />
+      <observable name="xOriginPrimary" value="ON" />
+      <observable name="yOriginPrimary" value="ON" />
+      <observable name="zOriginPrimary" value="ON" />
+      <observable name="xDirectionPrimary" value="ON" />
+      <observable name="yDirectionPrimary" value="ON" />
+      <observable name="zDirectionPrimary" value="ON" />
+      <observable name="energyPrimary" value="ON" />
+    </addProcess>
+
+    <addProcess type="TRestG4toHitsProcess" name="g4ToHits" value="ON"/>
+
+    <addProcess type="TRestHitsAnalysisProcess" name="hitsBeforeDiffusion" value="ON">
+      <observable name="energy" value="ON" />
+      <observable name="xMean" value="ON" />
+      <observable name="yMean" value="ON" />
+      <observable name="zMean" value="ON" />
+    </addProcess>
+
+    <addProcess type="TRestElectronDiffusionProcess" name="electronDiffusion_1kVcm_10atm" value="ON" maxHits="10000">
+      <parameter name="electricField" value="1" units="kV/cm" />
+      <parameter name="gasPressure" value="10" />
+    </addProcess>
+
+    <addProcess type="TRestHitsAnalysisProcess" name="hitsAfterDiffusion" value="ON">
+      <observable name="energy" value="ON" />
+      <observable name="xMean" value="ON" />
+      <observable name="yMean" value="ON" />
+      <observable name="zMean" value="ON" />
+    </addProcess>
+
+    <addProcess type="TRestHitsToSignalProcess" name="hitsToSignal" value="ON">
+      <parameter name="sampling" value="200ns" />
+      <parameter name="electricField" value="1000" units="V/cm" />
+      <parameter name="gasPressure" value="10" />
+    </addProcess>
+
+    <addProcess type="TRestReadoutAnalysisProcess" name="readoutAna" value="ON">
+      <observable name="FirstX" value="ON" />
+      <observable name="FirstY" value="ON" />
+      <observable name="LastX" value="ON" />
+      <observable name="LastY" value="ON" />
+    </addProcess>
+  </TRestProcessRunner>
+
+  <addTask type="processEvents" value="ON" />
+
+  <globals>
+    <parameter name="verboseLevel" value="essential" />
+    <parameter name="inputFile" value=""/>
+    <searchPath value="$ENV{REST_INPUTDATA}/definitions/"/>
+  </globals>
+</TRestManager>

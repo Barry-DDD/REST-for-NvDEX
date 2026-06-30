@@ -1,0 +1,325 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+
+<!DOCTYPE gdml [
+<!ENTITY materials SYSTEM "materials.xml">
+<!ENTITY geometry SYSTEM "geometry.gdml">
+]>
+
+<gdml xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://service-spi.web.cern.ch/service-spi/app/releases/GDML/schema/gdml.xsd">
+
+<define>
+
+	<!-- Some constants needed in caculations -->
+	<constant name="PI" value="3.14159265358979323846264" />
+    <constant name="degToRad" value="PI/180." />
+
+	<!-- Parameters for the Fiducial Volume and the HDPE layer -->
+	<constant name="ThicknessHDPE" value="3.5"/>
+	<constant name="RminDet" value="0"/>
+	<constant name="RmaxHDPE" value="48.0"/>
+	<constant name="RmaxDet" value="RmaxHDPE-ThicknessHDPE"/>
+	<constant name="deltaZHDPE" value="88"/>
+	<constant name="deltaZDet" value="deltaZHDPE-ThicknessHDPE"/>
+    <constant name="PhiminDet" value="0"/>
+    <constant name="deltaPhiDet" value="360"/>
+
+	<!-- Parameters of the Inner Copper Shielding -->
+	<constant name="ICSThickness" value="12"/>
+	<constant name="CuShieldOuterRadius" value="RmaxHDPE+ICSThickness"/>
+	<constant name="CuShieldInnerRadius" value="RmaxHDPE"/>
+	<constant name="CuShieldHalfLength" value="deltaZHDPE+ICSThickness"/>
+    <constant name="CuShieldHalfLengthInner" value="deltaZHDPE"/>
+
+	<!-- Parameters of the End-Caps Outer -->
+	<constant name="EndCapsOuterRadius" value="72.88"/>
+	<constant name="EndCapsInnerRadius" value="72.0"/>
+    <constant name="EndCapsShiftZ" value="-60.6"/>
+    <constant name="vesselHalfLengthOuter" value="146.4"/>
+
+	<!-- Parameters of the Space inside the SSV -->
+    <constant name="SSVThickness" value="1.0"/>
+	<constant name="SSVInnerRadius" value="CuShieldOuterRadius+0.2"/>
+	<constant name="SSVHalfLengthInner" value="100.1"/>
+    <constant name="vesselOuterRadius" value="CuShieldOuterRadius+SSVThickness+0.2"/>
+    <constant name="cylinderHalfLengthOuter" value="100.2"/>
+
+	<!-- Parameters of the Flanges -->
+	<constant name="flangesInnerRadius" value="vesselOuterRadius+0.1"/>
+	<constant name="flangesOuterRadius" value="vesselOuterRadius+0.1+13.15"/>
+	<constant name="flangesHalfLength" value="10.75/2.0"/>
+    <constant name="flangeShift" value="88.0"/>
+
+	<!-- Parameters of the Lead Shield -->
+	<constant name="LeadThickness" value="20.0"/>
+	<constant name="LeadShieldXInner" value="101.5"/>
+	<constant name="LeadShieldYInner" value="95.0"/>
+	<constant name="LeadShieldZInner" value="170.0"/>
+
+	<constant name="LeadShieldXOuter" value="LeadShieldXInner+LeadThickness"/>
+    <constant name="LeadShieldYOuter" value="LeadShieldYInner+LeadThickness"/>
+    <constant name="LeadShieldZOuter" value="LeadShieldZInner+LeadThickness"/>
+
+    <constant name="centerLeadX" value="-18.0"/>
+    <constant name="centerLeadY" value="0"/>
+    <constant name="centerLeadZ" value="0"/>
+
+	<!-- Parameters of the HDPE Fillings -->
+	<constant name="BoxHDPEFillOuterX" value="vesselOuterRadius+20.0"/>
+	<constant name="BoxHDPEFillOuterY" value="vesselOuterRadius+20.0"/>
+	<constant name="BoxHDPEFillOuterZ" value="vesselHalfLengthOuter+20.0"/>
+
+	<constant name="CylHDPEFillInnerR" value="vesselOuterRadius+0.1"/>
+    <constant name="CylHDPEFillInnerL" value="vesselHalfLengthOuter"/>
+
+	<!-- Parameters of the HDPE Shield -->
+	<constant name="HDPEshieldThickness" value="0.1"/>
+	<constant name="HDPEShieldingXOuter" value="LeadShieldXOuter+HDPEshieldThickness"/>
+    <constant name="HDPEShieldingYOuter" value="LeadShieldYOuter+HDPEshieldThickness"/>
+    <constant name="HDPEShieldingZOuter" value="LeadShieldZOuter+HDPEshieldThickness"/>
+
+
+    <!-- Parameters of the Pipies -->
+    <constant name="ThicknessPipes" value="0.6"/>
+    <constant name="RadiusLargePipe" value="15.0/2.0"/>
+    <constant name="RadiusMediumPipe" value="12.5/2.0"/>
+    <constant name="RadiusSmallPipe" value="8.0/2.0"/>
+    <constant name="LengthPipes" value="LeadShieldZInner-0.1"/>
+    <constant name="ShiftMediumPipeX" value="45.0/2.0"/>
+    <constant name="ShiftMediumPipeY" value="77.94/2.0"/>
+    <constant name="ShiftSmallPipeX" value="86.0/2.0"/>
+
+    <constant name="RadiusLargePipeMax" value="RadiusLargePipe"/>
+    <constant name="RadiusMediumPipeMax" value="RadiusMediumPipe"/>
+    <constant name="RadiusSmallPipeMax" value="RadiusSmallPipe"/>
+
+    <constant name="RadiusLargeEmptyPipeMin" value="RadiusLargePipe-ThicknessPipes"/>
+    <constant name="RadiusMediumEmptyPipeMin" value="RadiusMediumPipe-ThicknessPipes"/>
+    <constant name="RadiusSmallEmptyPipeMin" value="RadiusSmallPipe-ThicknessPipes"/>
+    <constant name="LengthEmptyPipesFunction" value="LengthPipes"/>
+
+    <constant name="RadiusLargeFullPipeMin" value="0"/>
+    <constant name="RadiusMediumFullPipeMin" value="0"/>
+    <constant name="RadiusSmallFullPipeMin" value="0"/>
+    <constant name="LengthFullPipesFunction" value="LengthPipes+0.05"/>
+
+    <!-- Parameters of the Holder -->
+    <constant name="ThicknessHolder" value="10.0"/>
+    <constant name="BaseOuterX" value="ThicknessHolder/2.0"/>
+    <constant name="BaseOuterY" value="83.9"/>
+    <constant name="BaseOuterZ" value="35.0"/>
+
+    <constant name="BaseInnerX" value="ThicknessHolder/2.0+0.5"/>
+    <constant name="BaseInnerY" value="BaseOuterY-10.0"/>
+    <constant name="BaseInnerZ" value="BaseOuterZ-10.0"/>
+
+    <constant name="HalfLengthVHandleX" value="41.5"/>
+    <constant name="HalfLengthVHandleY" value="ThicknessHolder/2.0"/>
+    <constant name="HalfLengthVHandleZ" value="ThicknessHolder/2.0"/>
+
+    <constant name="shiftVHandleX" value="HalfLengthVHandleX+5.0"/>
+    <constant name="shiftVHandleY" value="BaseOuterY-5.0"/>
+
+    <constant name="shiftBaseX" value="-HalfLengthVHandleX*2.0"/>
+    <constant name="shiftBaseY" value="0.0"/>
+    <constant name="shiftBaseZ" value="116.375"/>
+
+    <!-- Parameters of the diagonal holder -->
+    <constant name="HalfLengtDiagHolderOutZ" value="56.5/2.0"/>
+    <constant name="HalfLengtDiagHolderInnZ" value="36.7/2.0"/>
+
+    <constant name="HalfLengtDiagHolderOutXmax" value="35.0"/>
+    <constant name="HalfLengtDiagHolderInnXmax" value="25.0*(HalfLengtDiagHolderInnZ)/(HalfLengtDiagHolderInnZ-0.5)"/>
+
+    <constant name="HalfLengtDiagHolderOutXmin" value="5.0"/>
+    <constant name="HalfLengtDiagHolderInnXmin" value="5.0"/>
+
+    <constant name="HalfLengtDiagHolderOutY" value="5.0"/>
+    <constant name="HalfLengtDiagHolderInnY" value="5.1"/>
+
+    <constant name="DiagHandleShiftZ" value="-5.5"/>
+
+    <constant name="DiagHandleShiftPosX" value="HalfLengtDiagHolderOutZ+5.0"/>
+
+    <!-- Parameters of the Walls -->
+    <constant name="wallThickness" value="1"/>
+    <constant name="expHallOutLx" value="HDPEShieldingXOuter+wallThickness"/>
+    <constant name="expHallOutLy" value="HDPEShieldingYOuter+wallThickness"/>
+    <constant name="expHallOutLz" value="HDPEShieldingZOuter+wallThickness"/>
+
+    <constant name="lengthWorldX" value="500"/>
+    <constant name="lengthWorldY" value="500"/>
+    <constant name="lengthWorldZ" value="500"/>
+
+    <constant name="centerWorldX" value="0"/>
+    <constant name="centerWorldY" value="0"/>
+    <constant name="centerWorldZ" value="0"/>
+    <constant name="room temperature" value="300"/>
+
+
+
+
+</define>
+
+
+&materials;
+
+<solids>
+    <box name="WorldSolid" x="2*lengthWorldX" y="2*lengthWorldY" z="2*lengthWorldZ" lunit="cm" />
+    &geometry;
+</solids>
+
+<structure>
+
+
+    <volume name="WallVolume">
+        <materialref ref="Galactic"/>
+        <solidref ref="Wall"/>
+    </volume>
+
+    <volume name="HDPEVolume">
+        <materialref ref="HDPE"/>
+        <solidref ref="HDPE_subtraction"/>
+    </volume>
+
+    <volume name="LeadShieldVolume">
+        <materialref ref="Lead"/>
+        <solidref ref="Lead_subtraction"/>
+    </volume>
+
+    <volume name="HolderVolume">
+        <materialref ref="Stainlesssteel"/>
+        <solidref ref="HolderCreated"/>
+    </volume>
+
+    <volume name="HDPEFillingVolume">
+        <materialref ref="HDPE"/>
+        <solidref ref="HDPEFillCentral_subtraction"/>
+    </volume>
+
+
+    <volume name="PipesVolume">
+        <materialref ref="Stainlesssteel"/>
+        <solidref ref="PipesCutTmp"/>
+    </volume>
+
+    <volume name="SSVVolume">
+        <materialref ref="Stainlesssteel"/>
+        <solidref ref="SSV_subtraction"/>
+    </volume>
+
+    <volume name="InnerSSVVolume">
+        <materialref ref="Galactic"/>
+        <solidref ref="InnerSSV_Subtraction"/>
+    </volume>
+
+    <volume name="FlangeVolume">
+        <materialref ref="Stainlesssteel"/>
+        <solidref ref="Flange_subtraction"/>
+    </volume>
+
+    <volume name="ICSVolume">
+        <materialref ref="Copper"/>
+        <solidref ref="ICS_subtraction"/>
+    </volume>
+
+    <volume name="POMVolume">
+        <materialref ref="POM"/>
+        <solidref ref="fSolidPOM"/>
+    </volume>
+
+    <volume name="gasVolume">
+        <materialref ref="SeF6"/>
+        <solidref ref="fSolidAbsorber"/>
+    </volume>
+
+
+
+<!--Position-->
+<volume name="World">
+
+        <materialref ref="Galactic"/>
+        <solidref ref="WorldSolid"/>
+
+    <physvol name="Wall">
+        <volumeref ref="WallVolume"/>
+        <position name="WallVolumePosition" unit="cm" x="centerLeadX" y="centerLeadY" z="centerLeadZ"/>
+    </physvol>
+
+    <physvol name="HDPE Shield">
+            <volumeref ref="HDPEVolume"/>
+            <position name="HDPEVolumePosition" unit="cm" x="centerLeadX" y="centerLeadY" z="centerLeadZ"/>
+        </physvol>
+
+    <physvol name="Lead Shield">
+            <volumeref ref="LeadShieldVolume"/>
+            <position name="LeadShieldVolumePosition" unit="cm" x="centerLeadX" y="centerLeadY" z="centerLeadZ"/>
+        </physvol>
+
+    <physvol name="HolderL">
+            <volumeref ref="HolderVolume"/>
+            <position name="HolderVolumeLPosition" unit="cm" x="shiftBaseX" y="shiftBaseY" z="-shiftBaseZ"/>
+        </physvol>
+
+    <physvol name="HolderR">
+            <volumeref ref="HolderVolume"/>
+            <position name="HolderVolumeRPosition" unit="cm" x="shiftBaseX" y="shiftBaseY" z="shiftBaseZ"/>
+        </physvol>
+
+    <physvol name="HDPEFilling">
+            <volumeref ref="HDPEFillingVolume"/>
+            <position name="HDPEFillingVolumePosition" unit="cm" x="centerLeadX" y="centerLeadY" z="centerLeadZ"/>
+        </physvol>
+
+
+
+    <physvol name="Pipes">
+            <volumeref ref="PipesVolume"/>
+            <position name="PipesLVolumePosition" unit="cm" x="0" y="0" z="0"/>
+        </physvol>
+
+    <physvol name="SSV">
+            <volumeref ref="SSVVolume"/>
+            <position name="SSVVolumePosition" unit="cm" x="0" y="0" z="0"/>
+        </physvol>
+
+    <physvol name="InnerSSV">
+            <volumeref ref="InnerSSVVolume"/>
+            <position name="InnerSSVVolumePosition" unit="cm" x="0" y="0" z="0"/>
+        </physvol>
+
+    <physvol name="FlangeR">
+            <volumeref ref="FlangeVolume"/>
+            <position name="FlangeVolumeRPosition" unit="cm" x="0" y="0" z="flangeShift"/>
+        </physvol>
+
+    <physvol name="FlangeL">
+            <volumeref ref="FlangeVolume"/>
+            <position name="FlangeVolumeLPosition" unit="cm" x="0" y="0" z="-flangeShift"/>
+        </physvol>
+
+    <physvol name="ICS">
+            <volumeref ref="ICSVolume"/>
+            <position name="ICSVolumePosition" unit="cm" x="0" y="0" z="0"/>
+        </physvol>
+
+    <physvol name="POM">
+            <volumeref ref="POMVolume"/>
+            <position name="POMVolumePosition" unit="cm" x="0" y="0" z="0"/>
+        </physvol>
+
+    <physvol name="Gas">
+            <volumeref ref="gasVolume"/>
+            <position name="gasVolumePosition" unit="cm" x="0" y="0" z="0"/>
+        </physvol>
+
+
+
+    </volume>
+
+</structure>
+
+<setup name="Default" version="1.0">
+    <world ref="World"/>
+</setup>
+
+</gdml>
