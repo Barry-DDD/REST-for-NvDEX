@@ -1,10 +1,12 @@
-"""Edge-aware GATv2 regressor for TPC hit graphs."""
+"""Edge-aware GATv2 models for TPC hit graphs."""
 
 from __future__ import annotations
 
 import torch
 import torch.nn as nn
 from torch_geometric.nn import GATv2Conv, global_max_pool, global_mean_pool
+
+from task_spec import get_task_spec
 
 
 def _normalize_activation(name):
@@ -19,13 +21,55 @@ def _normalize_activation(name):
     raise ValueError("activation must be one of: relu, gelu, silu.")
 
 
-class TPCGATRegressor(nn.Module):
+class RegressionHead(nn.Module):
+    """Regression head that returns one flat scalar per graph."""
+
+    def __init__(self, in_channels: int, hidden_channels: int, dropout: float, activation: str):
+        super().__init__()
+        mid_channels = max(int(hidden_channels) // 2, 16)
+        self.layers = nn.Sequential(
+            nn.Linear(int(in_channels), int(hidden_channels)),
+            nn.LayerNorm(int(hidden_channels)),
+            _normalize_activation(activation),
+            nn.Dropout(float(dropout)),
+            nn.Linear(int(hidden_channels), mid_channels),
+            _normalize_activation(activation),
+            nn.Dropout(float(dropout)),
+            nn.Linear(mid_channels, 1),
+        )
+
+    def forward(self, x):
+        return self.layers(x).view(-1)
+
+
+class ClassificationHead(nn.Module):
+    """Classification head that returns logits per graph."""
+
+    def __init__(self, in_channels: int, hidden_channels: int, num_classes: int, dropout: float, activation: str):
+        super().__init__()
+        mid_channels = max(int(hidden_channels) // 2, 16)
+        self.layers = nn.Sequential(
+            nn.Linear(int(in_channels), int(hidden_channels)),
+            nn.LayerNorm(int(hidden_channels)),
+            _normalize_activation(activation),
+            nn.Dropout(float(dropout)),
+            nn.Linear(int(hidden_channels), mid_channels),
+            _normalize_activation(activation),
+            nn.Dropout(float(dropout)),
+            nn.Linear(mid_channels, int(num_classes)),
+        )
+
+    def forward(self, x):
+        return self.layers(x)
+
+
+class TPCGATBackbone(nn.Module):
     """
-    Lightweight edge-aware GATv2 regressor.
+    Shared edge-aware GATv2 graph encoder.
 
     The model consumes PyG Batch objects from TPCGraphDataset. It uses
-    GATv2Conv(edge_dim=5) layers, graph-level mean/max pooling, optional
-    event-level features, and a scalar regression head.
+    GATv2Conv(edge_dim=5 or 6) layers, graph-level mean/max pooling, optional
+    event-level features, and returns one event-level embedding per graph.
     """
 
     def __init__(
@@ -88,20 +132,10 @@ class TPCGATRegressor(nn.Module):
             pooled_channels += int(head_hidden_channels)
         else:
             self.event_mlp = None
-
-        self.regression_head = nn.Sequential(
-            nn.Linear(pooled_channels, int(head_hidden_channels)),
-            nn.LayerNorm(int(head_hidden_channels)),
-            _normalize_activation(activation),
-            nn.Dropout(float(dropout)),
-            nn.Linear(int(head_hidden_channels), max(int(head_hidden_channels) // 2, 16)),
-            _normalize_activation(activation),
-            nn.Dropout(float(dropout)),
-            nn.Linear(max(int(head_hidden_channels) // 2, 16), 1),
-        )
+        self.embedding_dim = pooled_channels
 
     def forward(self, data):
-        """Return one scaled primary_origin_z prediction per event."""
+        """Return one graph embedding per event."""
         x = self.input_proj(data.x)
         edge_index = data.edge_index
         edge_attr = data.edge_attr
@@ -127,4 +161,58 @@ class TPCGATRegressor(nn.Module):
             event_features = data.event_features.view(graph_features.size(0), -1)
             graph_features = torch.cat([graph_features, self.event_mlp(event_features)], dim=1)
 
-        return self.regression_head(graph_features).view(-1)
+        return graph_features
+
+
+class TPCGATModel(nn.Module):
+    """Task-aware GAT model with a shared backbone and task-specific head."""
+
+    def __init__(
+        self,
+        in_channels: int,
+        hidden_channels: int = 128,
+        num_layers: int = 3,
+        heads: int = 4,
+        edge_dim: int = 5,
+        event_feature_dim: int = 0,
+        head_hidden_channels: int = 128,
+        dropout: float = 0.10,
+        activation: str = "gelu",
+        task: str = "regression_z",
+    ):
+        super().__init__()
+        self.task_spec = get_task_spec(task)
+        self.backbone = TPCGATBackbone(
+            in_channels=in_channels,
+            hidden_channels=hidden_channels,
+            num_layers=num_layers,
+            heads=heads,
+            edge_dim=edge_dim,
+            event_feature_dim=event_feature_dim,
+            head_hidden_channels=head_hidden_channels,
+            dropout=dropout,
+            activation=activation,
+        )
+        self.embedding_dim = self.backbone.embedding_dim
+        if self.task_spec.is_classification:
+            self.head = ClassificationHead(
+                self.embedding_dim,
+                head_hidden_channels,
+                self.task_spec.num_outputs,
+                dropout,
+                activation,
+            )
+        else:
+            self.head = RegressionHead(self.embedding_dim, head_hidden_channels, dropout, activation)
+
+    def forward(self, data):
+        """Return task outputs for one PyG batch."""
+        return self.head(self.backbone(data))
+
+
+class TPCGATRegressor(TPCGATModel):
+    """Backward-compatible regression model name."""
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("task", "regression_z")
+        super().__init__(*args, **kwargs)

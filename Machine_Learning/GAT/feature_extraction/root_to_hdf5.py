@@ -48,6 +48,7 @@ HIT_INT_FIELDS = [
     "valid_geometry",
 ]
 EVENT_INT_FIELDS = ["n_hits", "n_primaries", "n_tracks"]
+OPTIONAL_EVENT_INT_FIELDS = ["id"]
 EVENT_FLOAT_FIELDS = [
     "total_energy",
     "primary_origin_x",
@@ -58,7 +59,7 @@ EVENT_FLOAT_FIELDS = [
 ]
 PRIMARY_FLOAT_FIELDS = ["primary_energy", "primary_dir_x", "primary_dir_y", "primary_dir_z"]
 PRIMARY_STRING_FIELDS = ["primary_particle_name"]
-STATS_FIELDS = ["x", "y", "local_q", "local_r", "module_id", "energy", "log_energy"]
+STATS_FIELDS = ["x", "y", "z", "local_q", "local_r", "module_id", "energy", "log_energy"]
 
 
 class RunningStats:
@@ -212,6 +213,7 @@ def load_root_events(input_path: Path, tree_name: str) -> list[dict[str, Any]]:
 
     branches = (
         EVENT_INT_FIELDS
+        + OPTIONAL_EVENT_INT_FIELDS
         + EVENT_FLOAT_FIELDS
         + HIT_FLOAT_FIELDS
         + HIT_INT_FIELDS
@@ -251,6 +253,9 @@ def build_event_metadata(events: list[dict[str, Any]], hit_block: dict[str, np.n
 
     for field in EVENT_INT_FIELDS:
         metadata[field] = np.asarray([int(_event_scalar(event, field, 0)) for event in events], dtype=np.int32)
+    for field in OPTIONAL_EVENT_INT_FIELDS:
+        if any(field in event for event in events):
+            metadata[field] = np.asarray([int(_event_scalar(event, field, 0)) for event in events], dtype=np.int32)
     for field in EVENT_FLOAT_FIELDS:
         metadata[field] = np.asarray([float(_event_scalar(event, field, 0.0)) for event in events], dtype=np.float32)
 
@@ -328,7 +333,7 @@ def write_hdf5(
         h5.attrs["source_root"] = str(input_path)
         h5.attrs["tree_name"] = tree_name
         h5.attrs["filter"] = "energy > 0"
-        h5.attrs["hit_feature_names"] = json.dumps(["x", "y", "energy", "log_energy"])
+        h5.attrs["hit_feature_names"] = json.dumps(["x", "y", "z", "energy", "log_energy"])
         h5.attrs["graph_coordinate_names"] = json.dumps(["x", "y", "local_q", "local_r", "module_id"])
 
         events_group = h5.create_group("events")

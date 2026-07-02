@@ -11,7 +11,7 @@ file.h5
 │   ├── source_root = "..."
 │   ├── tree_name = "HitTree"
 │   ├── filter = "energy > 0"
-│   ├── hit_feature_names = ["x", "y", "energy", "log_energy"]
+│   ├── hit_feature_names = ["x", "y", "z", "energy", "log_energy"]
 │   └── graph_coordinate_names = ["x", "y", "local_q", "local_r", "module_id"]
 │
 ├── events/
@@ -22,6 +22,7 @@ file.h5
 │   ├── primary_count
 │   ├── n_hits
 │   ├── n_hits_original
+│   ├── id                         (optional classification label)
 │   ├── total_energy
 │   ├── total_energy_filtered
 │   ├── n_primaries
@@ -72,18 +73,21 @@ file.h5
   - event index = row index (no `event_id` stored; use row position as the unique key).
   - `hit_start`, `hit_count`: slice into `/hits/*` for each event.
   - `primary_start`, `primary_count`: slice into `/primaries/*` for each event.
+  - `id`: optional event-level classification label. Current convention:
+    `1 = 2nubb_ex` signal, `21 = 2nubb_gs`, `22 = co60`, `23 = u238`,
+    `24 = th232` backgrounds.
   - `n_hits_original`: hit count before `energy > 0` filtering.
   - `total_energy`: original value from the ROOT file.
   - `total_energy_filtered`: sum of positive-energy hits after filtering.
   - truth fields: `n_primaries`, `n_tracks`, `primary_origin_x/y/z`, `g4_total_deposited_energy`, `g4_sensitive_volume_energy`.
 - `/hits`: flat positive-energy hit table.
-  - point-cloud features: `x`, `y`, `energy`, `log_energy`.
+  - point-cloud features: `x`, `y`, optional drift-coordinate feature `z`, `energy`, `log_energy`.
   - graph coordinate alternatives: `x`, `y`, `local_q`, `local_r`, `module_id`.
   - extra geometry fields are preserved: `module_col`, `module_row`, `module_q`, `module_r`, `local_col`, `local_row`, `q`, `r`, `valid_geometry`, pad center and residual fields.
 - `/primaries`: flat primary-particle table.
   - `primary_particle_name`, `primary_energy`, `primary_dir_x/y/z`.
 - `/stats`: normalization statistics over all positive-energy hits.
-  - `feature_names`: `x`, `y`, `local_q`, `local_r`, `module_id`, `energy`, `log_energy`.
+  - `feature_names`: `x`, `y`, `z`, `local_q`, `local_r`, `module_id`, `energy`, `log_energy`.
   - `mean`, `std`, `min`, `max`; `std` is population standard deviation.
 - `/summary`: file-level counts.
 
@@ -104,4 +108,7 @@ primary_dir_x = h5["primaries/primary_dir_x"][p_start:p_start + p_count]
 ```
 
 For a GAT model, build `radius_graph` from `/hits/x` and `/hits/y` inside one event.
-For a point-cloud model, stack `/hits/x`, `/hits/y`, `/hits/energy`, and `/hits/log_energy`.
+When `z` is selected as a node feature, normalize it through `/stats` like
+`energy` and `log_energy`; the training dataset can also add `dz/std(z)` as an
+edge feature. For a point-cloud model, stack `/hits/x`, `/hits/y`, optionally
+`/hits/z`, `/hits/energy`, and `/hits/log_energy`.

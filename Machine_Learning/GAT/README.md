@@ -1,9 +1,9 @@
 # GAT for NvDEx
 
-Reconstruction of the primary vertex Z position (`primary_origin_z`) of NvDEx TPC
-events using a Graph Attention Network (GATv2) on the xy-plane hits.
-
-Can be extended to other tasks.
+Task-aware graph learning for NvDEx TPC events using a Graph Attention Network
+(GATv2) on xy-plane hits. The original task reconstructs the primary vertex Z
+position (`primary_origin_z`); the same graph input pipeline also supports
+event-id classification tasks.
 
 The pipeline goes from REST simulation ROOT files to a single merged HDF5
 training file, and then trains a graph regression model on a GPU cluster.
@@ -23,7 +23,7 @@ per-file HDF5
         v
 merged all_events.h5
         |
-        |  tpc_GAT/run.py        (GATv2 training)
+        |  tpc_GAT/run.py        (task-aware GATv2 training)
         v
 trained model + evaluation
 ```
@@ -44,7 +44,8 @@ tpc_gat/
 │
 ├── tpc_GAT/                   GATv2 model and training pipeline
 │   ├── tpc_graph_dataset.py              HDF5 -> PyG graph dataset
-│   ├── gat_model.py                      Edge-aware GATv2 regressor
+│   ├── gat_model.py                      Edge-aware GATv2 backbone + task heads
+│   ├── task_spec.py                      Task definitions and id label mappings
 │   ├── utils.py                          DDP-safe train / validation loops
 │   ├── run.py                            Training entry point (torchrun)
 │   ├── event_stats.py                    Pre-training data inspection
@@ -158,7 +159,8 @@ python feature_extraction/root_to_hdf5.py processed.root processed.h5 --tree Hit
 The output HDF5 contains `events/`, `hits/`, `primaries/`, `stats/`, `summary/`
 groups. Hits with `energy <= 0` are filtered before writing. See
 [`feature_extraction/HDF5_SCHEMA.md`](feature_extraction/HDF5_SCHEMA.md) for the
-full schema.
+full schema. New HDF5 files include `/hits/z` and `/stats/z`, so the training
+pipeline can optionally use `--features x y z energy log_energy`.
 
 ### 1.3 Merge per-file HDF5 -> single training file
 
@@ -188,8 +190,9 @@ sbatch --array=1-200%20 feature_extraction/jobs/submit_H5_array.sh
 
 ## Stage 2 — Training the GAT model
 
-The model implements an edge-aware GATv2 regression network that takes per-event
-hit graphs and predicts the scaled `primary_origin_z`. See
+The model implements an edge-aware GATv2 network that takes per-event hit graphs
+and predicts either the scaled `primary_origin_z` or event classification labels.
+See
 [`tpc_GAT/README.md`](tpc_GAT/README.md) for the complete model documentation,
 dataset fields, hyperparameters, and output file formats.
 
@@ -201,6 +204,7 @@ conda activate pyg-env
 torchrun --nproc_per_node=1 tpc_GAT/run.py \
   --infile  /path/to/all_events.h5 \
   --outdir  tpc_GAT/results/run_demo \
+  --task regression_z \
   --epochs 30 \
   --batch_size 16 \
   --learning_rate 1e-3 \
@@ -211,6 +215,21 @@ torchrun --nproc_per_node=1 tpc_GAT/run.py \
   --num_layers 3 \
   --heads 4
 ```
+
+To include hit-level z information in the graph input, use HDF5 files generated
+with the current converter and change the feature list to:
+
+```bash
+--features x y z energy log_energy
+```
+
+The dataset keeps xy-plane radius connectivity, standardizes `z` with the same
+`feature_norm_mode` used for `energy` and `log_energy`, and adds `dz/std_z` to
+the GAT edge attributes.
+
+For binary event classification on files containing `/events/id`, use
+`--task binary_id`. The current mapping is `id=1 -> signal label 1` and
+`id=21/22/23/24 -> background label 0`.
 
 ### Inspect data before training
 

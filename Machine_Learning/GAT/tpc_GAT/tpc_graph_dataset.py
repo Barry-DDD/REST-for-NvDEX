@@ -16,6 +16,8 @@ import numpy as np
 import torch
 from torch_geometric.data import Data, Dataset
 
+from task_spec import get_task_spec
+
 
 class TPCData(Data):
     """PyG Data subclass that keeps scalar metadata as plain metadata."""
@@ -34,7 +36,7 @@ class TPCGraphDataset(Dataset):
         x: normalized node features, default [x, y, energy, log_energy]
         pos: raw xy hit coordinates in mm, shape [n_hit, 2]
         edge_index: directed radius graph edges, shape [2, n_edge]
-        edge_attr: [dx/r, dy/r, distance/r, dE, same_module]
+        edge_attr: [dx/r, dy/r, distance/r, dE, same_module], plus dz/std_z when z is selected
         y: scaled primary_origin_z target, shape [1]
         target_raw: raw primary_origin_z in mm, shape [1]
         event-level and primary-level metadata for later evaluation
@@ -46,6 +48,7 @@ class TPCGraphDataset(Dataset):
         "n_hits_original",
         "n_primaries",
         "n_tracks",
+        "id",
     )
     EVENT_FLOAT_KEYS = (
         "total_energy",
@@ -65,6 +68,7 @@ class TPCGraphDataset(Dataset):
         h5_path: str,
         node_feature_names: Iterable[str] = DEFAULT_NODE_FEATURES,
         radius_mm: float = 20.0,
+        task: str = "regression_z",
         target_key: str = "primary_origin_z",
         target_mode: str = "minus_one_one",
         target_abs_max: float = 845.0,
@@ -79,7 +83,9 @@ class TPCGraphDataset(Dataset):
         self.file_path = str(h5_path)
         self.node_feature_names = tuple(node_feature_names)
         self.radius_mm = float(radius_mm)
-        self.target_key = str(target_key)
+        self.task_spec = get_task_spec(task)
+        self.task = self.task_spec.name
+        self.target_key = self.task_spec.target_key if self.task_spec.is_classification else str(target_key)
         self.target_mode = str(target_mode)
         self.target_abs_max = float(target_abs_max)
         self.xy_abs_max = float(xy_abs_max)
@@ -88,6 +94,8 @@ class TPCGraphDataset(Dataset):
         self.drop_empty_events = bool(drop_empty_events)
         self.eps = float(eps)
         self.h5file = None
+        self.use_z_edges = "z" in self.node_feature_names
+        self.edge_dim = 6 if self.use_z_edges else 5
 
         if self.radius_mm <= 0.0:
             raise ValueError("radius_mm must be positive.")
@@ -95,6 +103,7 @@ class TPCGraphDataset(Dataset):
             raise ValueError("target_abs_max must be positive.")
         if self.xy_abs_max <= 0.0:
             raise ValueError("xy_abs_max must be positive.")
+        self._validate_event_features()
 
         with h5py.File(self.file_path, "r") as h5:
             self.total_events = self._validate_h5(h5)
@@ -107,9 +116,12 @@ class TPCGraphDataset(Dataset):
             self._validate_feature_selection(h5)
             self.event_feature_dim = self._infer_event_feature_dim(h5)
             self.event_indices, self.hit_counts = self._build_event_index(h5)
+            self.raw_targets = np.asarray(h5[f"events/{self.target_key}"][self.event_indices])
+            self.labels = self._build_labels(self.raw_targets)
 
         self._prepare_feature_normalization_constants()
         self.edge_energy_scale = self._feature_std_or_one("energy")
+        self.edge_z_scale = self._feature_std_or_one("z")
 
         print("[TPCGraphDataset] Dataset initialized:")
         print(f"  File: {self.file_path}")
@@ -122,7 +134,14 @@ class TPCGraphDataset(Dataset):
         print(f"  Event feature keys: {self.event_feature_keys}")
         print(f"  Event feature dimension: {self.event_feature_dim}")
         print(f"  Radius graph: {self.radius_mm:.3f} mm")
-        print(f"  Target: {self.target_key}, mode={self.target_mode}, abs_max={self.target_abs_max}")
+        print(f"  Edge feature dimension: {self.edge_dim}")
+        if self.use_z_edges:
+            print(f"  Edge dz scale: stats/std(z)={self.edge_z_scale:.6g}")
+        print(f"  Task: {self.task}")
+        if self.task_spec.is_classification:
+            print(f"  Target: {self.target_key}, classes={self.task_spec.num_outputs}")
+        else:
+            print(f"  Target: {self.target_key}, mode={self.target_mode}, abs_max={self.target_abs_max}")
         if len(self.hit_counts) > 0:
             print(
                 "  Hit count min/median/mean/max: "
@@ -153,6 +172,13 @@ class TPCGraphDataset(Dataset):
         if h5[f"events/{self.target_key}"].shape[0] != total_events:
             raise ValueError(f"events/{self.target_key} length does not match event count.")
         return total_events
+
+    def _validate_event_features(self):
+        """Prevent labels and truth targets from being used as input features."""
+        forbidden = {"id", self.target_key, self.task_spec.target_key}
+        leaked = sorted(forbidden.intersection(self.event_feature_keys))
+        if leaked:
+            raise ValueError(f"event_features cannot include task target fields: {leaked}.")
 
     def _validate_feature_selection(self, h5):
         """Validate selected node features against hits and stats."""
@@ -204,6 +230,12 @@ class TPCGraphDataset(Dataset):
             raise ValueError("No usable events were found. All events have zero filtered hits.")
         return event_indices, hit_counts[event_indices].astype(np.int64)
 
+    def _build_labels(self, raw_targets):
+        """Build cached train labels for splitters and diagnostics."""
+        if self.task_spec.is_classification:
+            return self.task_spec.map_raw_labels(raw_targets)
+        return np.asarray([self._scale_target(float(value)) for value in raw_targets], dtype=np.float32)
+
     def _prepare_feature_normalization_constants(self):
         """Precompute normalization constants for selected node features."""
         selected = np.asarray([self.stats_index[name] for name in self.node_feature_names], dtype=np.int64)
@@ -245,19 +277,28 @@ class TPCGraphDataset(Dataset):
             hits = self._dummy_hits()
 
         raw_xy = np.stack([hits["x"], hits["y"]], axis=1).astype(np.float32, copy=False)
+        raw_z = np.asarray(hits["z"], dtype=np.float32) if self.use_z_edges else None
         raw_energy = hits["energy"].astype(np.float32, copy=False)
         module_id = hits["module_id"].astype(np.int64, copy=False)
         node_features = self._load_node_features(hits)
-        edge_index, edge_attr = self._build_edges(raw_xy, raw_energy, module_id)
+        edge_index, edge_attr = self._build_edges(raw_xy, raw_z, raw_energy, module_id)
 
-        raw_target = float(self.file[f"events/{self.target_key}"][file_idx])
+        raw_target_value = self.file[f"events/{self.target_key}"][file_idx]
+        raw_target = float(raw_target_value) if self.task_spec.is_regression else int(raw_target_value)
+        if self.task_spec.is_classification:
+            label = int(self.task_spec.map_raw_labels(np.asarray([raw_target]))[0])
+            y = torch.tensor([label], dtype=torch.long)
+            target_raw = torch.tensor([raw_target], dtype=torch.long)
+        else:
+            y = torch.tensor([self._scale_target(float(raw_target))], dtype=torch.float32)
+            target_raw = torch.tensor([float(raw_target)], dtype=torch.float32)
         data = TPCData(
             x=torch.from_numpy(node_features).float(),
             pos=torch.from_numpy(raw_xy).float(),
             edge_index=edge_index,
             edge_attr=edge_attr,
-            y=torch.tensor([self._scale_target(raw_target)], dtype=torch.float32),
-            target_raw=torch.tensor([raw_target], dtype=torch.float32),
+            y=y,
+            target_raw=target_raw,
             event_index=torch.tensor([file_idx], dtype=torch.long),
             n_hit=torch.tensor([count], dtype=torch.long),
         )
@@ -320,12 +361,12 @@ class TPCGraphDataset(Dataset):
             return 1.0
         return value
 
-    def _build_edges(self, xy, energy, module_id):
+    def _build_edges(self, xy, z, energy, module_id):
         """Build directed radius edges and edge attributes for one event."""
         n_hits = int(xy.shape[0])
         if n_hits <= 1:
             empty_index = torch.empty((2, 0), dtype=torch.long)
-            empty_attr = torch.empty((0, 5), dtype=torch.float32)
+            empty_attr = torch.empty((0, self.edge_dim), dtype=torch.float32)
             return empty_index, empty_attr
 
         delta = xy[None, :, :] - xy[:, None, :]
@@ -335,7 +376,7 @@ class TPCGraphDataset(Dataset):
 
         if src.size == 0:
             empty_index = torch.empty((2, 0), dtype=torch.long)
-            empty_attr = torch.empty((0, 5), dtype=torch.float32)
+            empty_attr = torch.empty((0, self.edge_dim), dtype=torch.float32)
             return empty_index, empty_attr
 
         dxy = xy[dst] - xy[src]
@@ -343,16 +384,21 @@ class TPCGraphDataset(Dataset):
         d_energy = (energy[dst] - energy[src]).astype(np.float32)
         same_module = (module_id[src] == module_id[dst]).astype(np.float32)
 
-        edge_attr = np.stack(
+        columns = [
+            dxy[:, 0] / self.radius_mm,
+            dxy[:, 1] / self.radius_mm,
+            dist / self.radius_mm,
+        ]
+        if self.use_z_edges:
+            dz = (z[dst] - z[src]).astype(np.float32)
+            columns.append(dz / self.edge_z_scale)
+        columns.extend(
             [
-                dxy[:, 0] / self.radius_mm,
-                dxy[:, 1] / self.radius_mm,
-                dist / self.radius_mm,
                 d_energy / self.edge_energy_scale,
                 same_module,
-            ],
-            axis=1,
-        ).astype(np.float32, copy=False)
+            ]
+        )
+        edge_attr = np.stack(columns, axis=1).astype(np.float32, copy=False)
         edge_index = np.stack([src, dst], axis=0).astype(np.int64, copy=False)
         return torch.from_numpy(edge_index).long(), torch.from_numpy(edge_attr).float()
 
