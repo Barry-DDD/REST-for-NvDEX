@@ -2,10 +2,24 @@
 old/
 logs/
 log/
-results/*/
-result/*/
 outputs/*/
 output/*/
+
+results/*/
+!results/**/
+!results/**/*.py
+!results/**/*.C
+!results/**/*.c
+!results/**/*.cpp
+!results/**/*.sh
+
+result/*/
+!result/**/
+!result/**/*.py
+!result/**/*.C
+!result/**/*.c
+!result/**/*.cpp
+!result/**/*.sh
 
 __pycache__/
 

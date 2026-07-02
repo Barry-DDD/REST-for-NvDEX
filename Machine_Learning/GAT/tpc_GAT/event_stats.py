@@ -63,13 +63,17 @@ def scan_file(h5_path, n_events, radii_mm, seed):
         energies = []
         log_energies = []
         targets = []
+        event_ids = []
         edge_counts = {float(radius): [] for radius in radii_mm}
+        has_event_id = "events/id" in h5
 
         for idx in indices:
             start = int(h5["events/hit_start"][idx])
             count = int(h5["events/hit_count"][idx])
             hit_counts.append(count)
             targets.append(float(h5["events/primary_origin_z"][idx]))
+            if has_event_id:
+                event_ids.append(int(h5["events/id"][idx]))
             if count <= 0:
                 for radius in edge_counts:
                     edge_counts[radius].append(0)
@@ -99,8 +103,31 @@ def scan_file(h5_path, n_events, radii_mm, seed):
         "energies": np.concatenate(energies) if energies else np.asarray([], dtype=np.float32),
         "log_energies": np.concatenate(log_energies) if log_energies else np.asarray([], dtype=np.float32),
         "targets": np.asarray(targets, dtype=np.float32),
+        "event_ids": np.asarray(event_ids, dtype=np.int32),
         "edge_counts": {radius: np.asarray(values, dtype=np.int64) for radius, values in edge_counts.items()},
     }
+
+
+def print_id_distribution(event_ids):
+    """Print classification label counts when /events/id is available."""
+    if event_ids.size == 0:
+        print("\n[event id distribution]")
+        print("  /events/id not found")
+        return
+
+    values, counts = np.unique(event_ids, return_counts=True)
+    print("\n[event id distribution]")
+    for value, count in zip(values, counts):
+        print(f"  id={int(value):>2}: {int(count)}")
+
+    signal = int(np.count_nonzero(event_ids == 1))
+    background = int(np.count_nonzero(np.isin(event_ids, [21, 22, 23, 24])))
+    other = int(event_ids.size - signal - background)
+    print("\n[binary classification distribution]")
+    print(f"  signal(id=1): {signal}")
+    print(f"  background(id=21/22/23/24): {background}")
+    if other:
+        print(f"  unsupported/other ids: {other}")
 
 
 def main():
@@ -128,6 +155,7 @@ def main():
     summarize("hit energy", stats["energies"])
     summarize("hit log_energy", stats["log_energies"])
     summarize("primary_origin_z", stats["targets"], "mm")
+    print_id_distribution(stats["event_ids"])
 
     print("\n[directed edge count per event]")
     for radius, values in stats["edge_counts"].items():

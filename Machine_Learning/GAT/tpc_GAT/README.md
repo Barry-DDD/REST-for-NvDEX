@@ -1,16 +1,19 @@
 # TPC GAT Code Notes
 
-This directory implements the `primary_origin_z` regression training pipeline
-based on graphs of TPC xy-plane hits. Input files must follow the merged HDF5
-schema defined in `tpc_feature_extraction/HDF5_SCHEMA.md`.
+This directory implements a task-aware graph learning pipeline based on TPC
+xy-plane hit graphs. It supports the original `primary_origin_z` regression
+task and event-id classification tasks that reuse the same graph input pattern.
+Input files must follow the merged HDF5 schema defined in
+`feature_extraction/HDF5_SCHEMA.md`.
 
 ## File overview
 
 | File | Purpose |
 | --- | --- |
 | `tpc_graph_dataset.py` | Converts TPC HDF5 events into PyG `Data` graphs; handles hit reading, normalization, radius-graph construction, target scaling, and metadata retention. |
-| `gat_model.py` | Lightweight edge-aware GATv2 regression model; the core layer is `GATv2Conv(edge_dim=5)`. |
-| `utils.py` | Training and validation helpers: DDP reduce, AMP training, regression metrics, and scaled/raw target conversion. |
+| `gat_model.py` | Shared edge-aware GATv2 backbone plus task-specific regression or classification heads. |
+| `task_spec.py` | Task definitions, label mappings, output dimensions, and default losses. |
+| `utils.py` | Training and validation helpers: DDP reduce, AMP training, regression and classification metrics. |
 | `run.py` | Training entry point; supports single-process and `torchrun` DDP. |
 | `event_stats.py` | Quick data inspection script for hit counts, xy nearest-neighbor distances, candidate radius edge counts, and energy / z distributions. |
 
@@ -23,10 +26,10 @@ Main fields of each sample:
 
 | Field | Meaning |
 | --- | --- |
-| `x` | Node features, default `[x, y, energy, log_energy]`; `x/y` are always divided by `445 mm` into `[-1, 1]`, while the other features are normalized according to `feature_norm_mode`. |
+| `x` | Node features, default `[x, y, energy, log_energy]`; optional `[x, y, z, energy, log_energy]` is supported when `/stats/z` exists. `x/y` are always divided by `445 mm` into `[-1, 1]`, while the other features are normalized according to `feature_norm_mode`. |
 | `pos` | Raw `x, y` coordinates in mm, shape `[n_hit, 2]`. |
 | `edge_index` | Directed radius graph within an event. |
-| `edge_attr` | `[dx/r, dy/r, distance/r, dE/std_energy, same_module]`, shape `[n_edge, 5]`. |
+| `edge_attr` | Without `z`: `[dx/r, dy/r, distance/r, dE/std_energy, same_module]`, shape `[n_edge, 5]`. With `z` selected as a node feature: `[dx/r, dy/r, distance/r, dz/std_z, dE/std_energy, same_module]`, shape `[n_edge, 6]`. |
 | `y` | Scaled training target, default `primary_origin_z / 845`, roughly in `[-1, 1]`. |
 | `target_raw` | Raw `primary_origin_z` in mm. |
 | `event_index`, `n_hit` | Event id and filtered hit count. |
@@ -50,19 +53,24 @@ Key configuration parameters:
 Notes:
 
 - Graph edges are built only within a single event, never across events.
-- `feature_norm_mode` does not apply to `x/y`; it only affects non-coordinate node features such as `energy` and `log_energy`.
+- `feature_norm_mode` does not apply to `x/y`; it affects non-xy node features such as `z`, `energy`, and `log_energy`.
+- Radius edges are still built in the xy plane. Selecting `z` adds local `dz/std_z`
+  information to edge attributes but does not change graph connectivity.
 - `TPCData.__inc__()` prevents PyG batching from auto-offsetting `event_index`.
 - `inverse_scale_target()` converts model outputs from scaled values back to mm.
+- For classification tasks, `/events/id` is read as the raw label. `binary_id`
+  maps `id=1` to signal label `1` and `id=21/22/23/24` to background label `0`.
+  `multiclass_id` maps `{1,21,22,23,24}` to five class indices.
 
 ## `gat_model.py`
 
-`TPCGATRegressor` is a lightweight regression model:
+`TPCGATModel` is a task-aware model:
 
 1. `input_proj`: project node features to the hidden dimension.
-2. Stacked `GATv2Conv(edge_dim=5, concat=False)`: use inter-hit edge features.
+2. Stacked `GATv2Conv(edge_dim=5 or 6, concat=False)`: use inter-hit edge features.
 3. `global_mean_pool + global_max_pool`: produce an event-level graph embedding.
 4. Optional `event_features` MLP: concatenate event-level input features.
-5. Regression head: output a single scaled `primary_origin_z`.
+5. Task head: output either one scaled regression value or classification logits.
 
 Common parameters:
 
@@ -72,7 +80,7 @@ Common parameters:
 | `hidden_channels` | `128` | GAT hidden dimension. |
 | `num_layers` | `3` | Number of GATv2 layers. |
 | `heads` | `4` | Number of attention heads. |
-| `edge_dim` | `5` | Fixed to match the dataset's edge features. |
+| `edge_dim` | dataset-derived | `5` without `z`, `6` when `z` is selected as a node feature. |
 | `event_feature_dim` | `0` | Optional event feature dimension. |
 | `dropout` | `0.10` | Dropout rate. |
 | `activation` | `"gelu"` | `relu`, `gelu`, `silu`. |
@@ -85,9 +93,20 @@ Basic example:
 torchrun --nproc_per_node=1 tpc_GAT/run.py \
   --infile /path/to/all_events.h5 \
   --outdir tpc_GAT/results \
+  --task regression_z \
   --radius_mm 20 \
   --target_mode minus_one_one \
   --target_abs_max 845
+```
+
+Binary event classification example:
+
+```bash
+torchrun --nproc_per_node=1 tpc_GAT/run.py \
+  --infile /path/to/all_events_with_id.h5 \
+  --outdir tpc_GAT/results_binary_id \
+  --task binary_id \
+  --radius_mm 20
 ```
 
 Main parameters:
@@ -96,6 +115,7 @@ Main parameters:
 | --- | --- | --- |
 | `--infile` | required | Input HDF5 file. |
 | `--outdir` | `./results_tpc_gat` | Output directory. |
+| `--task` | `regression_z` | `regression_z`, `binary_id`, or `multiclass_id`. |
 | `--epochs` | `50` | Number of training epochs. |
 | `--batch_size` | `128` | Per-process batch size. |
 | `--learning_rate` | `1e-3` | OneCycleLR maximum learning rate. |
@@ -108,6 +128,16 @@ Main parameters:
 | `--xy_abs_max` | `445.0` | Half-range for x/y coordinate scaling. |
 | `--keep_empty_events` | off | When set, keep zero-hit events and use a dummy hit. |
 | `--event_features` | empty | Optional `/events` fields fed to the model; do not add target/truth-leaking fields. |
+
+To include hit-level `z` information, use HDF5 files generated with `/stats/z`
+and pass:
+
+```bash
+--features x y z energy log_energy
+```
+
+This standardizes `z` through `feature_norm_mode` and automatically adds
+`dz/std_z` to `edge_attr`.
 
 > **Note:** Fields in `--event_features` are fed to the model as **raw values**,
 > without dataset-level normalization. The `LayerNorm` in the model's internal
@@ -136,7 +166,7 @@ Output files:
 | File | Contents |
 | --- | --- |
 | `best_model.pt` | Model weights at the epoch with the lowest validation loss. |
-| `best_evaluation.npz` | `preds`, `labels` are inverse-scaled mm values; also stores `preds_scaled`, `labels_scaled`, `mae_mm`, `rmse_mm`, and metadata. |
+| `best_evaluation.npz` | Regression: `preds`, `labels`, scaled values, MAE/RMSE, and metadata. Classification: `logits`, `probabilities`, `predicted_class`, mapped `labels`, raw `id` labels, confusion matrix, metrics, and metadata. |
 | `training_history.npz` | Structured NumPy archive: per-epoch `train_loss`, `val_loss`, `train_scaled_mae`, `val_scaled_mae`, `val_mae_mm`, `val_rmse_mm`, and scalar hyperparameters. Load with `np.load("training_history.npz")`. String fields (feature names, norm mode, etc.) are in `training_config.json`. |
 | `training_config.json` | More human-readable config and history. |
 
@@ -165,6 +195,8 @@ Output includes:
 - xy nearest-neighbor distance distribution, to judge whether `radius_mm` is reasonable.
 - Directed edge count at each candidate radius.
 - `energy`, `log_energy`, `primary_origin_z` distributions.
+- `/events/id` distribution when available, including signal/background counts
+  for binary classification.
 - Simple suggestions for radius and model size.
 
 ## Configurations used in the job scripts
