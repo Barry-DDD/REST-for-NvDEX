@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "deployment": "current",
+  "preset": "theta-angle-v1",
+  "infile": "input/new_sample.h5",
+  "vertex_source": "truth",
+  "execution": {
+    "backend": "direct",
+    "device": "cuda",
+    "gpu": "0",
+    "setup_script": null
+  },
+  "parameters": {
+    "radius_mm": 4.0
+  }
+}

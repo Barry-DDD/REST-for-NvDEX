@@ -22,10 +22,11 @@ def _normalize_activation(name):
 
 
 class RegressionHead(nn.Module):
-    """Regression head that returns one flat scalar per graph."""
+    """Regression head preserving flat outputs for legacy scalar tasks."""
 
-    def __init__(self, in_channels: int, hidden_channels: int, dropout: float, activation: str):
+    def __init__(self, in_channels: int, hidden_channels: int, dropout: float, activation: str, num_outputs: int = 1):
         super().__init__()
+        self.num_outputs = int(num_outputs)
         mid_channels = max(int(hidden_channels) // 2, 16)
         self.layers = nn.Sequential(
             nn.Linear(int(in_channels), int(hidden_channels)),
@@ -35,11 +36,12 @@ class RegressionHead(nn.Module):
             nn.Linear(int(hidden_channels), mid_channels),
             _normalize_activation(activation),
             nn.Dropout(float(dropout)),
-            nn.Linear(mid_channels, 1),
+            nn.Linear(mid_channels, self.num_outputs),
         )
 
     def forward(self, x):
-        return self.layers(x).view(-1)
+        output = self.layers(x)
+        return output.view(-1) if self.num_outputs == 1 else output
 
 
 class ClassificationHead(nn.Module):
@@ -68,7 +70,7 @@ class TPCGATBackbone(nn.Module):
     Shared edge-aware GATv2 graph encoder.
 
     The model consumes PyG Batch objects from TPCGraphDataset. It uses
-    GATv2Conv(edge_dim=5 or 6) layers, graph-level mean/max pooling, optional
+    GATv2Conv(edge_dim=5) layers, graph-level mean/max pooling, optional
     event-level features, and returns one event-level embedding per graph.
     """
 
@@ -203,7 +205,8 @@ class TPCGATModel(nn.Module):
                 activation,
             )
         else:
-            self.head = RegressionHead(self.embedding_dim, head_hidden_channels, dropout, activation)
+            self.head = RegressionHead(self.embedding_dim, head_hidden_channels, dropout, activation,
+                                       num_outputs=self.task_spec.num_outputs)
 
     def forward(self, data):
         """Return task outputs for one PyG batch."""

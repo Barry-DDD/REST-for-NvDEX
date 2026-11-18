@@ -1,0 +1,20 @@
+{
+  "name": "ihep",
+  "project": "/lustrefs/juno26/users/liuz3/work/test/GAT",
+  "ssh_host": "ihep-codex",
+  "python": "/hpcfs/juno/junogpu/liuz3/conda/envs/ml-v100-torch251/bin/python",
+  "execution": {
+    "backend": "slurm",
+    "device": "cuda",
+    "gpu": null,
+    "setup_script": null
+  },
+  "resources": {
+    "partition": "gpu",
+    "account": "junogpu",
+    "qos": "normal",
+    "cpus": 5,
+    "memory": "64G",
+    "time": "16:00:00"
+  }
+}

@@ -1,47 +1,50 @@
 #!/bin/bash
-#SBATCH --job-name=elecsim_r24_12mm
-#SBATCH --partition=dgx2  #dgx2,dgx1,nv100-sug,nv100-ins
+#SBATCH --job-name=model_pid
+# #SBATCH --partition=junogpu
+# #SBATCH --qos=junoatmgpu
+# #SBATCH --account=junogpu
+#SBATCH --partition=gpu
+#SBATCH --qos=normal
+#SBATCH --account=junogpu
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=5        # 1 main + 4 DataLoader workers
-#SBATCH --mem=16G
-#SBATCH --time=02:00:00
-#SBATCH --output=/public/home/liuz1/work/26.03.18_rest/test_example/tpc_gat/jobs/logs/tpc_gat_r12_%j.out
-#SBATCH --error=/public/home/liuz1/work/26.03.18_rest/test_example/tpc_gat/jobs/logs/tpc_gat_r12_%j.err
+#SBATCH --mem=64G
+#SBATCH --time=16:00:00
+#SBATCH --output=/lustrefs/juno26/users/liuz3/work/test/GAT/jobs/logs/pid_%j.out
+#SBATCH --error=/lustrefs/juno26/users/liuz3/work/test/GAT/jobs/logs/pid_%j.err
 
 set -euo pipefail
 
-OUTDIR=/public/home/liuz1/work/26.03.18_rest/test_example/tpc_gat/results/results_r24_elecsim_12mm
-INFILE=/public/home/liuz1/work/26.03.18_rest/test_example/feature_extraction/output/all_events_elecsim_12mm.h5
+env_name=ml-v100-torch251
+#env_name=ml-env-blackwell
+echo "+++++Activate environment"
+source /cvmfs/juno.ihep.ac.cn/sw/mamba/Mambaforge-2023.05-Linux-x86_64/etc/profile.d/conda.sh
+source /cvmfs/juno.ihep.ac.cn/sw/mamba/Mambaforge-2023.05-Linux-x86_64/etc/profile.d/mamba.sh
+conda activate ${env_name}
+echo "+++++ done"
 
-cd /public/home/liuz1/work/26.03.18_rest/test_example/tpc_gat/jobs
-mkdir -p /public/home/liuz1/work/26.03.18_rest/test_example/tpc_gat/jobs/logs
+#OUTDIR=/lustrefs/juno26/users/liuz3/work/test/GAT/results/pid_2nubb_ex_lr5e-3_wd1e-3_batch64
+#INFILE=/lustrefs/juno26/users/liuz3/work/test/GAT/jobs/select48K_mixed.h5
+
+OUTDIR=/lustrefs/juno26/users/liuz3/work/test/GAT/results/pid_detsim_2nubb_ex_lr5e-3_wd1e-3_batch64
+INFILE=/lustrefs/juno26/users/liuz3/work/test/GAT/jobs/detsim_select80K_mixed.h5
+
+
 mkdir -p "${OUTDIR}"
 
-# Activate conda environment
-source /public/soft/linux-centos7-x86_64/gcc-10.3.0/miniconda3-22.11.1-jrusysshr36o4fjbexlhrpljufoxhu4b/etc/profile.d/conda.sh
-conda activate pyg-env
-
-echo "Job: ${SLURM_JOB_ID}  Node: $(hostname)"
-echo "Python: $(which python)  Torch: $(python -c 'import torch; print(torch.__version__)')"
-echo "Allocated GPU(s):"
-nvidia-smi --query-gpu=name,memory.total --format=csv,noheader
-
-PORT=$(( (SLURM_JOB_ID % 40000) + 10000 ))
-MASTER_ADDR=$(hostname)
-echo "Using rdzv_endpoint=${MASTER_ADDR}:${PORT}"
+# criterion = nn.SmoothL1Loss()
 
 torchrun --nproc_per_node=1 \
-  --rdzv_backend=c10d \
-  --rdzv_endpoint=${MASTER_ADDR}:${PORT} \ 
-  /public/home/liuz1/work/26.03.18_rest/test_example/tpc_gat/tpc_GAT/run.py \
+  /lustrefs/juno26/users/liuz3/work/test/GAT/tpc_GAT/run.py \
   --infile    "${INFILE}"  \
   --outdir    "${OUTDIR}"  \
+  --task binary_id         \
   --epochs    30           \
-  --batch_size       16   \
-  --learning_rate    1e-3  \
-  --weight_decay     1e-3  \
+  --batch_size       64   \
+  --learning_rate    5e-4 \
+  --weight_decay     1e-3 \
   --features x y energy log_energy \
   --feature_norm_mode standard      \
   --radius_mm        24    \
@@ -50,7 +53,6 @@ torchrun --nproc_per_node=1 \
   --heads            4     \
   --num_workers      4
 
+# --learning_rate    1e-3 \
 
-# sbatch sub_job.sh
-
-
+# sbatch sub_job_elecsim_default.sh

@@ -1,9 +1,13 @@
 # GAT for NvDEx
 
+The [nvdex-ml-workflow quick start](skills/nvdex-ml-workflow/README.md) shows how to
+check an HDF5 sample, prepare a direct or SLURM training run, and validate and plot
+the results for existing GAT tasks.
+
 Task-aware graph learning for NvDEx TPC events using a Graph Attention Network
 (GATv2) on xy-plane hits. The original task reconstructs the primary vertex Z
 position (`primary_origin_z`); the same graph input pipeline also supports
-event-id classification tasks.
+event-id classification tasks and the 0vbb primary-electron energy asymmetry A.
 
 The pipeline goes from REST simulation ROOT files to a single merged HDF5
 training file, and then trains a graph regression model on a GPU cluster.
@@ -159,8 +163,7 @@ python feature_extraction/root_to_hdf5.py processed.root processed.h5 --tree Hit
 The output HDF5 contains `events/`, `hits/`, `primaries/`, `stats/`, `summary/`
 groups. Hits with `energy <= 0` are filtered before writing. See
 [`feature_extraction/HDF5_SCHEMA.md`](feature_extraction/HDF5_SCHEMA.md) for the
-full schema. New HDF5 files include `/hits/z` and `/stats/z`, so the training
-pipeline can optionally use `--features x y z energy log_energy`.
+full schema.
 
 ### 1.3 Merge per-file HDF5 -> single training file
 
@@ -216,16 +219,14 @@ torchrun --nproc_per_node=1 tpc_GAT/run.py \
   --heads 4
 ```
 
-To include hit-level z information in the graph input, use HDF5 files generated
-with the current converter and change the feature list to:
+To also feed the hit `z` coordinate as an input, add `z` to `--features`. Like
+`x/y`, `z` uses fixed symmetric scaling (mean assumed 0), differing only in its
+half-range, controlled by `--z_abs_max` (default `850` mm):
 
 ```bash
---features x y z energy log_energy
+  --features x y z energy log_energy \
+  --xy_abs_max 445 --z_abs_max 850 \
 ```
-
-The dataset keeps xy-plane radius connectivity, standardizes `z` with the same
-`feature_norm_mode` used for `energy` and `log_energy`, and adds `dz/std_z` to
-the GAT edge attributes.
 
 For binary event classification on files containing `/events/id`, use
 `--task binary_id`. The current mapping is `id=1 -> signal label 1` and
@@ -248,7 +249,7 @@ After training (`--outdir`):
 | File | Description |
 | --- | --- |
 | `best_model.pt`         | Model weights at the lowest validation loss epoch. |
-| `best_evaluation.npz`   | Per-event predictions (mm), labels (mm), metadata, plus MAE / RMSE. |
+| `best_evaluation.npz`   | Task predictions, labels, metadata and metrics; Z uses mm and A is dimensionless. |
 | `training_history.npz`  | Per-epoch losses and metrics, plus scalar hyperparameters. |
 | `training_config.json`  | Human-readable config and training history. |
 
@@ -285,3 +286,71 @@ script before submission.
 - For elecsim inputs the typical hit count is ~20 per event. For detsim with
   fine readout pitch it can be much larger and may require smaller batch sizes
   or smaller `hidden_channels`.
+
+
+## Primary-electron energy asymmetry A
+
+Each run selects one task and constructs one output head. Use `--task regression_A`
+for the dimensionless 0vbb target `A = abs(E1-E2)/(E1+E2)`. The two primary electron
+energies are read from the existing HDF5 primary offsets; no input conversion is
+needed. Training uses `y = (A - 0.4113) / 0.2663` and the existing scalar head.
+
+From the server project root:
+
+```bash
+mkdir -p jobs/logs
+sbatch jobs/sub_job_detsim_A.sh
+```
+
+The job uses `input/processed_0vbb_above1Mev.h5`, an 80/20 split with seed 42,
+and writes to `results/detsim_A_<job_id>`. It runs `results/plot_A_result.py`
+after successful training. Override `INFILE`, `OUTDIR`, or `ENV_NAME` through
+environment variables if needed. Cluster account/partition settings follow the
+existing IHEP job and may be edited for the allocated hardware.
+
+See [A training details](tpc_GAT/README.md#regression_a-primary-electron-energy-asymmetry)
+for validation requirements, outputs, diagnostics, and checks.
+
+## Primary-electron opening angle
+
+Use `--task regression_theta` to reconstruct the opening-angle `cos(theta)` from
+the two primary electron direction vectors. The raw label is mapped through an
+empirical CDF fitted only on the training split; the saved mapping is reused for
+validation and inverse transformation.
+
+```bash
+mkdir -p jobs/logs
+sbatch jobs/sub_job_detsim_theta.sh
+```
+
+The job writes `results/detsim_theta_<job_id>` and generates
+`theta_all_plots.pdf`, including CDF-space and raw `cos(theta)` diagnostics.
+
+## Joint vertex XYZ reconstruction
+
+Use `--task regression_xyz` to predict `primary_origin_x/y/z` together from
+absolute hit `x y z energy log_energy` features. The existing GATv2 backbone and
+xy radius graph are reused, with a three-output regression head. All target axes
+share the default `845 mm` scale and `SmoothL1Loss`; predictions are saved in mm
+as `[N, 3]` arrays in x, y, z order. Truth-based `--vertex_relative` and truth
+vertex event features are rejected for this task.
+
+```bash
+mkdir -p jobs/logs
+sbatch jobs/sub_job_detsim_vertex.sh
+```
+
+The job uses `input/detsim_tehta0vbb_noDiffusion_2mm_selected.h5`, seed 42, an
+80/20 train/validation split, and an xy graph radius of 4 mm. Results are written
+to `results/detsim_vertex_2mm_<job_id>`. After training, it runs
+`results/plot_vertex_result.py` to produce `vertex_all_plots.pdf` and
+`vertex_metrics.json`. See [joint vertex details](tpc_GAT/README.md#regression_xyz-joint-vertex-reconstruction).
+
+## Hit-centroid frame for A / theta
+
+Use `--vertex_centroid` to append the existing seven vertex-relative node features
+with an unweighted XYZ hit centroid as reference. This supports `regression_A` and
+`regression_theta`, requires `hits/z`, and does not read truth vertex fields for
+input features. It is mutually exclusive with the existing `--vertex_relative`
+truth-vertex option. In a truth-frame job, replace that flag and choose a separate
+output directory. See [vertex frame details](tpc_GAT/README.md#vertex-relative-inputs-for-a-and-theta).

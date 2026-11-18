@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import random
 import time
 
 import numpy as np
@@ -15,7 +16,8 @@ from torch.utils.data.distributed import DistributedSampler
 from torch_geometric.loader import DataLoader
 
 from gat_model import TPCGATModel
-from task_spec import SUPPORTED_TASKS, get_task_spec
+from task_spec import (SUPPORTED_TASKS, VERTEX_METRIC_KEYS, VERTEX_TARGET_KEYS,
+                       fit_cdf_transform, get_task_spec, get_target_transform)
 from tpc_graph_dataset import TPCGraphDataset
 from utils import train_epoch, validate_epoch
 
@@ -33,11 +35,15 @@ def parse_args():
     parser.add_argument("--features", nargs="+", default=["x", "y", "energy", "log_energy"], help="Selected hit node features.")
     parser.add_argument("--feature_norm_mode", default="standard", choices=["standard", "minmax", "standard_minmax", "none"])
     parser.add_argument("--radius_mm", default=20.0, type=float, help="Radius graph threshold in raw xy mm.")
-    parser.add_argument("--target_mode", default="minus_one_one", choices=["minus_one_one", "zero_one", "none"])
-    parser.add_argument("--target_abs_max", default=845.0, type=float, help="Absolute z range used for target scaling.")
+    parser.add_argument("--target_mode", default=None, choices=["minus_one_one", "zero_one", "none", "standard", "cdf", "angle"], help="Default: minus_one_one for Z/XYZ; standard for A; cdf (cos theta) for theta. Use angle to regress theta in degrees linearly scaled to [-1, 1].")
+    parser.add_argument("--target_abs_max", default=845.0, type=float, help="Vertex target scale in mm; XYZ uses the same scale for all three axes.")
     parser.add_argument("--xy_abs_max", default=445.0, type=float, help="Absolute xy coordinate range used for x/y scaling.")
+    parser.add_argument("--z_abs_max", default=850.0, type=float, help="Absolute z coordinate range used for z scaling.")
     parser.add_argument("--keep_empty_events", action="store_true", help="Keep zero-hit events as one dummy zero hit.")
     parser.add_argument("--event_features", nargs="*", default=[], help="Optional /events feature keys concatenated before the task head.")
+    vertex_group = parser.add_mutually_exclusive_group()
+    vertex_group.add_argument("--vertex_relative", action="store_true", help="Append relative features using the truth vertex.")
+    vertex_group.add_argument("--vertex_centroid", action="store_true", help="Append relative features using the unweighted XYZ hit centroid; for regression_A / regression_theta.")
     parser.add_argument("--hidden_channels", default=128, type=int, help="GAT hidden channel dimension.")
     parser.add_argument("--num_layers", default=3, type=int, help="Number of GATv2Conv layers.")
     parser.add_argument("--heads", default=4, type=int, help="Number of attention heads.")
@@ -75,7 +81,7 @@ def setup_distributed():
     return distributed, rank, world_size, local_rank, device
 
 
-def print_config(args, world_size, input_channels, edge_dim, event_feature_dim, task_spec):
+def print_config(args, world_size, input_channels, event_feature_dim, task_spec, target_transform):
     """Print the training configuration."""
     print("========== TPC GAT Training Configuration ==========")
     print(f"Input file: {args.infile}")
@@ -88,22 +94,23 @@ def print_config(args, world_size, input_channels, edge_dim, event_feature_dim, 
     print(f"Learning rate: {args.learning_rate}")
     print(f"Weight decay: {args.weight_decay}")
     print(f"Node features: {args.features}")
+    print(f"Vertex frame: {'centroid' if args.vertex_centroid else 'truth' if args.vertex_relative else 'none'}")
     print(f"Input channels: {input_channels}")
-    print(f"Edge feature dimension: {edge_dim}")
     print(f"Feature normalization mode: {args.feature_norm_mode}")
     print(f"XY coordinate scale: +/- {args.xy_abs_max} mm -> [-1, 1]")
+    print(f"Z coordinate scale: +/- {args.z_abs_max} mm -> [-1, 1]")
     print(f"Radius graph: {args.radius_mm} mm")
     if task_spec.is_classification:
         print(f"Target: {task_spec.target_key}, classes: {task_spec.num_outputs}")
     else:
-        print(f"Target mode: {args.target_mode}, abs max: {args.target_abs_max}")
+        print(f"Target: {task_spec.target_key}, mode={target_transform.mode}, unit={target_transform.unit}")
     print(f"Event feature keys: {args.event_features}")
     print(f"Event feature dimension: {event_feature_dim}")
     print(f"GAT hidden/layers/heads: {args.hidden_channels}/{args.num_layers}/{args.heads}")
     print("====================================================")
 
 
-def save_best_result(outdir, model, val_result, task_spec):
+def save_best_result(outdir, model, val_result, task_spec, target_transform=None):
     """Save the best model and corresponding validation result."""
     model_path = os.path.join(outdir, "best_model.pt")
     eval_path = os.path.join(outdir, "best_evaluation.npz")
@@ -131,10 +138,28 @@ def save_best_result(outdir, model, val_result, task_spec):
             "labels": val_result["labels"],
             "preds_scaled": val_result["preds_scaled"],
             "labels_scaled": val_result["labels_scaled"],
-            "mae_mm": np.asarray([val_result["mae_mm"]], dtype=np.float32),
-            "rmse_mm": np.asarray([val_result["rmse_mm"]], dtype=np.float32),
+            "mae": np.asarray([val_result["mae"]], dtype=np.float32),
+            "rmse": np.asarray([val_result["rmse"]], dtype=np.float32),
+            "bias": np.asarray([val_result["bias"]], dtype=np.float32),
+            "residual_std": np.asarray([val_result["residual_std"]], dtype=np.float32),
             "scaled_mae": np.asarray([val_result["scaled_mae"]], dtype=np.float32),
         }
+    for key in ("mae_mm", "rmse_mm", "out_of_range_fraction", "cdf_out_of_range_fraction"):
+        if key in val_result:
+            save_dict[key] = np.asarray([val_result[key]], dtype=np.float32)
+    save_dict["task"] = np.asarray(task_spec.name)
+    if task_spec.name == "regression_xyz":
+        save_dict["target_names"] = np.asarray(VERTEX_TARGET_KEYS)
+        for key in VERTEX_METRIC_KEYS:
+            save_dict[key] = np.asarray(val_result[key], dtype=np.float64)
+    if target_transform is not None:
+        save_dict.update(target_mode=np.asarray(target_transform.mode),
+                         target_offset=np.asarray(target_transform.offset),
+                         target_scale=np.asarray(target_transform.scale),
+                         target_unit=np.asarray(target_transform.unit))
+        if target_transform.mode == "cdf":
+            save_dict.update(cdf_values=target_transform.cdf_values,
+                             cdf_probabilities=target_transform.cdf_probabilities)
     for key, value in val_result["metadata"].items():
         save_dict[key] = value
     np.savez_compressed(eval_path, **save_dict)
@@ -164,6 +189,13 @@ def main():
     """Run training."""
     args = parse_args()
     task_spec = get_task_spec(args.task)
+    target_transform = get_target_transform(args.task, args.target_mode, args.target_abs_max)
+    args.target_mode = target_transform.mode
+    random.seed(args.seed)
+    np.random.seed(args.seed)
+    torch.manual_seed(args.seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(args.seed)
     if not (0.0 < args.val_fraction < 1.0):
         raise ValueError("val_fraction must be between 0 and 1.")
 
@@ -183,17 +215,16 @@ def main():
         target_mode=args.target_mode,
         target_abs_max=args.target_abs_max,
         xy_abs_max=args.xy_abs_max,
+        z_abs_max=args.z_abs_max,
         feature_norm_mode=args.feature_norm_mode,
         event_feature_keys=args.event_features,
+        vertex_relative=args.vertex_relative,
+        vertex_centroid=args.vertex_centroid,
         drop_empty_events=(not args.keep_empty_events),
     )
 
-    input_channels = len(args.features)
-    edge_dim = full_data.edge_dim
+    input_channels = full_data.node_feature_dim
     event_feature_dim = full_data.event_feature_dim
-    if is_main_process:
-        print_config(args, world_size, input_channels, edge_dim, event_feature_dim, task_spec)
-
     if task_spec.is_classification:
         train_indices, val_indices = stratified_split_indices(full_data.labels, args.val_fraction, args.seed)
         train_dataset = Subset(full_data, train_indices)
@@ -205,6 +236,58 @@ def main():
             raise ValueError(f"Invalid split sizes: train_size={train_size}, val_size={val_size}.")
         split_generator = torch.Generator().manual_seed(args.seed)
         train_dataset, val_dataset = random_split(full_data, [train_size, val_size], generator=split_generator)
+
+    if args.task == "regression_theta" and target_transform.mode == "cdf":
+        target_transform = fit_cdf_transform(full_data.raw_targets[np.asarray(train_dataset.indices)])
+        full_data.set_target_transform(target_transform)
+
+    if is_main_process:
+        print_config(args, world_size, input_channels, event_feature_dim, task_spec, target_transform)
+
+    split_info = {
+        "train_event_index": full_data.event_indices[np.asarray(train_dataset.indices)],
+        "val_event_index": full_data.event_indices[np.asarray(val_dataset.indices)],
+        "train_targets": full_data.raw_targets[np.asarray(train_dataset.indices)],
+        "val_targets": full_data.raw_targets[np.asarray(val_dataset.indices)],
+    }
+    if is_main_process:
+        np.savez_compressed(os.path.join(args.outdir, "split_indices.npz"), **split_info)
+    run_config = dict(vars(args))
+    run_config["vertex_source"] = full_data.vertex_source
+    run_config.update(target_key=full_data.target_key, target_unit=target_transform.unit,
+                      target_offset=target_transform.offset, target_scale=target_transform.scale,
+                      total_events=full_data.total_events, usable_events=len(full_data),
+                      train_size=len(train_dataset), val_size=len(val_dataset), world_size=world_size)
+    if args.task == "regression_xyz":
+        run_config.update(target_names=list(VERTEX_TARGET_KEYS),
+                          metric_definition="mae/rmse average coordinate errors; rmse_3d_mm uses Euclidean distance")
+    if args.task == "regression_A":
+        baseline = float(np.mean(split_info["train_targets"], dtype=np.float64))
+        residual = baseline - split_info["val_targets"].astype(np.float64)
+        run_config.update(A_mu=target_transform.offset, A_sigma=target_transform.scale,
+                          target_formula="abs(E1-E2)/(E1+E2)", baseline_A=baseline,
+                          baseline_mae=float(np.mean(np.abs(residual))),
+                          baseline_rmse=float(np.sqrt(np.mean(residual ** 2))))
+    if args.task == "regression_theta" and target_transform.mode == "angle":
+        baseline = float(np.mean(split_info["train_targets"], dtype=np.float64))
+        residual = baseline - split_info["val_targets"].astype(np.float64)
+        run_config.update(target_formula="degrees(arccos(dot(d1,d2)/(|d1||d2|)))", baseline_theta_deg=baseline,
+                          baseline_mae=float(np.mean(np.abs(residual))),
+                          baseline_rmse=float(np.sqrt(np.mean(residual ** 2))))
+    if args.task == "regression_theta" and target_transform.mode == "cdf":
+        baseline = float(np.mean(split_info["train_targets"], dtype=np.float64))
+        residual = baseline - split_info["val_targets"].astype(np.float64)
+        run_config.update(target_formula="dot(d1,d2)/(|d1||d2|)", cdf_fit="training_split_only",
+                          cdf_knot_count=int(target_transform.cdf_values.size), baseline_cos_theta=baseline,
+                          baseline_mae=float(np.mean(np.abs(residual))),
+                          baseline_rmse=float(np.sqrt(np.mean(residual ** 2))))
+        split_info.update(cdf_values=target_transform.cdf_values,
+                          cdf_probabilities=target_transform.cdf_probabilities)
+        if is_main_process:
+            np.savez_compressed(os.path.join(args.outdir, "split_indices.npz"), **split_info)
+    if is_main_process:
+        with open(os.path.join(args.outdir, "training_config.json"), "w", encoding="utf-8") as handle:
+            json.dump(run_config, handle, indent=2)
 
     train_sampler = DistributedSampler(train_dataset, num_replicas=world_size, rank=rank, shuffle=True, drop_last=True) if distributed else None
     val_sampler = DistributedSampler(val_dataset, num_replicas=world_size, rank=rank, shuffle=False, drop_last=False) if distributed else None
@@ -246,9 +329,12 @@ def main():
         if task_spec.is_classification:
             print(f"Sample label: {int(sample.y.item())}")
             print(f"Sample raw id: {int(sample.target_raw.item())}")
+        elif task_spec.num_outputs > 1:
+            print(f"Sample scaled target (x, y, z): {sample.y.tolist()}")
+            print(f"Sample raw target ({target_transform.unit}): {sample.target_raw.tolist()}")
         else:
             print(f"Sample scaled target: {float(sample.y.item()):.5f}")
-            print(f"Sample raw target mm: {float(sample.target_raw.item()):.3f}")
+            print(f"Sample raw target ({target_transform.unit}): {float(sample.target_raw.item()):.3f}")
         full_data.close()
 
     model = TPCGATModel(
@@ -256,7 +342,7 @@ def main():
         hidden_channels=args.hidden_channels,
         num_layers=args.num_layers,
         heads=args.heads,
-        edge_dim=edge_dim,
+        edge_dim=5,
         event_feature_dim=event_feature_dim,
         head_hidden_channels=args.head_hidden_channels,
         dropout=args.dropout,
@@ -281,13 +367,17 @@ def main():
     if task_spec.is_classification:
         history = {"train_loss": [], "val_loss": [], "train_accuracy": [], "val_accuracy": [], "val_precision": [], "val_recall": [], "val_f1": [], "val_roc_auc": []}
     else:
-        history = {"train_loss": [], "val_loss": [], "train_scaled_mae": [], "val_scaled_mae": [], "val_mae_mm": [], "val_rmse_mm": []}
+        history = {"train_loss": [], "val_loss": [], "train_scaled_mae": [], "val_scaled_mae": [], "val_mae": [], "val_rmse": []}
+    history["lr"] = []
+    if args.task == "regression_xyz":
+        history.update({f"val_{key}": [] for key in VERTEX_METRIC_KEYS})
+    history["lr_epoch"] = []
     start_time = time.time()
 
     for epoch in range(1, args.epochs + 1):
         if train_sampler is not None:
             train_sampler.set_epoch(epoch)
-        train_loss, train_metric, _ = train_epoch(
+        train_loss, train_metric, lrs = train_epoch(
             model=model,
             device=device,
             train_loader=train_loader,
@@ -308,10 +398,13 @@ def main():
             target_abs_max=args.target_abs_max,
             target_mode=args.target_mode,
             task=args.task,
+            target_transform=target_transform,
         )
         val_loss = val_result["loss"]
 
         if is_main_process:
+            history["lr"].extend(lrs)
+            history["lr_epoch"].extend((epoch - 1 + (np.arange(len(lrs)) + 1) / len(lrs)).tolist())
             history["train_loss"].append(train_loss)
             history["val_loss"].append(val_loss)
             if task_spec.is_classification:
@@ -340,17 +433,22 @@ def main():
                     f"Train Scaled MAE: {train_metric:.5f} | "
                     f"Val Loss: {val_loss:.5f} | "
                     f"Val Scaled MAE: {val_result['scaled_mae']:.5f} | "
-                    f"Val MAE: {val_result['mae_mm']:.3f} mm | "
-                    f"Val RMSE: {val_result['rmse_mm']:.3f} mm"
+                    f"Val MAE: {val_result['mae']:.5f} {target_transform.unit} | "
+                    f"Val RMSE: {val_result['rmse']:.5f} {target_transform.unit}"
                 )
                 history["train_scaled_mae"].append(train_metric)
                 history["val_scaled_mae"].append(val_result["scaled_mae"])
-                history["val_mae_mm"].append(val_result["mae_mm"])
-                history["val_rmse_mm"].append(val_result["rmse_mm"])
+                history["val_mae"].append(val_result["mae"])
+                history["val_rmse"].append(val_result["rmse"])
+                if args.task == "regression_xyz":
+                    for key in VERTEX_METRIC_KEYS:
+                        history[f"val_{key}"].append(np.asarray(val_result[key]).tolist())
+                    print(f"  Val MAE xyz [mm]: {val_result['mae_xyz']} | "
+                          f"R68: {val_result['r68_mm']:.3f} mm | R95: {val_result['r95_mm']:.3f} mm")
             if val_loss < best_val_loss:
                 best_val_loss = val_loss
                 best_epoch = epoch
-                save_best_result(args.outdir, model, val_result, task_spec)
+                save_best_result(args.outdir, model, val_result, task_spec, target_transform)
                 print(f"--> Saved new best model and evaluation metrics at Epoch {best_epoch}.")
 
     if is_main_process:
@@ -358,64 +456,14 @@ def main():
         print()
         print(f"Training completed in {total_time:.2f} minutes.")
         print(f"Best model was found at Epoch {best_epoch} with Val Loss: {best_val_loss:.5f}")
-        history.update(
-            {
-                "best_epoch": best_epoch,
-                "best_val_loss": best_val_loss,
-                "task": args.task,
-                "features": args.features,
-                "feature_norm_mode": args.feature_norm_mode,
-                "radius_mm": args.radius_mm,
-                "target_mode": args.target_mode,
-                "target_abs_max": args.target_abs_max,
-                "xy_abs_max": args.xy_abs_max,
-                "input_channels": input_channels,
-                "edge_dim": edge_dim,
-                "event_features": args.event_features,
-                "event_feature_dim": event_feature_dim,
-                "hidden_channels": args.hidden_channels,
-                "num_layers": args.num_layers,
-                "heads": args.heads,
-                "dropout": args.dropout,
-            }
-        )
-        history_npz = {
-            "train_loss": np.asarray(history["train_loss"], dtype=np.float32),
-            "val_loss": np.asarray(history["val_loss"], dtype=np.float32),
-            "best_epoch": np.asarray([history["best_epoch"]], dtype=np.int32),
-            "best_val_loss": np.asarray([history["best_val_loss"]], dtype=np.float32),
-            "radius_mm": np.asarray([history["radius_mm"]], dtype=np.float32),
-            "target_abs_max": np.asarray([history["target_abs_max"]], dtype=np.float32),
-            "xy_abs_max": np.asarray([history["xy_abs_max"]], dtype=np.float32),
-            "input_channels": np.asarray([history["input_channels"]], dtype=np.int32),
-            "edge_dim": np.asarray([history["edge_dim"]], dtype=np.int32),
-            "event_feature_dim": np.asarray([history["event_feature_dim"]], dtype=np.int32),
-            "hidden_channels": np.asarray([history["hidden_channels"]], dtype=np.int32),
-            "num_layers": np.asarray([history["num_layers"]], dtype=np.int32),
-            "heads": np.asarray([history["heads"]], dtype=np.int32),
-            "dropout": np.asarray([history["dropout"]], dtype=np.float32),
-        }
-        if task_spec.is_classification:
-            history_npz.update(
-                {
-                    "train_accuracy": np.asarray(history["train_accuracy"], dtype=np.float32),
-                    "val_accuracy": np.asarray(history["val_accuracy"], dtype=np.float32),
-                    "val_precision": np.asarray(history["val_precision"], dtype=np.float32),
-                    "val_recall": np.asarray(history["val_recall"], dtype=np.float32),
-                    "val_f1": np.asarray(history["val_f1"], dtype=np.float32),
-                    "val_roc_auc": np.asarray(history["val_roc_auc"], dtype=np.float32),
-                }
-            )
-        else:
-            history_npz.update(
-                {
-                    "train_scaled_mae": np.asarray(history["train_scaled_mae"], dtype=np.float32),
-                    "val_scaled_mae": np.asarray(history["val_scaled_mae"], dtype=np.float32),
-                    "val_mae_mm": np.asarray(history["val_mae_mm"], dtype=np.float32),
-                    "val_rmse_mm": np.asarray(history["val_rmse_mm"], dtype=np.float32),
-                }
-            )
-        np.savez_compressed(os.path.join(args.outdir, "training_history.npz"), **history_npz)
+        history.update(run_config)
+        history.update(best_epoch=best_epoch, best_val_loss=best_val_loss,
+                       input_channels=input_channels, event_feature_dim=event_feature_dim)
+        if args.task == "regression_z":
+            history["val_mae_mm"] = history["val_mae"]
+            history["val_rmse_mm"] = history["val_rmse"]
+        np.savez_compressed(os.path.join(args.outdir, "training_history.npz"),
+                            **{key: np.asarray(value) for key, value in history.items() if value is not None})
         with open(os.path.join(args.outdir, "training_config.json"), "w", encoding="utf-8") as handle:
             json.dump(history, handle, indent=2)
 

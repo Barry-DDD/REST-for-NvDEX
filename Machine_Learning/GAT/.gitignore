@@ -2,31 +2,25 @@
 old/
 logs/
 log/
+results/*/
+result/*/
 outputs/*/
 output/*/
-
-results/*/
-!results/**/
-!results/**/*.py
-!results/**/*.C
-!results/**/*.c
-!results/**/*.cpp
-!results/**/*.sh
-
-result/*/
-!result/**/
-!result/**/*.py
-!result/**/*.C
-!result/**/*.c
-!result/**/*.cpp
-!result/**/*.sh
-
+tests/*/
+check/*/
+checks/*/
+.codex/*/
+.claude*/
 __pycache__/
+
+results/
 
 # --- Agent / Claude notes (at any depth) ---
 CLAUDE.md
 AGENT.md
 AGENTS.md
+AI_TOOLING_ROADMAP.md
+PLOTTING_GUIDE.md
 
 # --- Python build / cache artifacts ---
 *.py[cod]

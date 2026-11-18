@@ -1,0 +1,5 @@
+interface:
+  display_name: "NvDEx ML Workflow"
+  short_description: "Inspect TPC data and prepare and review GAT experiments"
+policy:
+  allow_implicit_invocation: true

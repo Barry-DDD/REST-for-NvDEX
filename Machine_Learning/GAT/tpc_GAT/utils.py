@@ -8,11 +8,13 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from task_spec import get_task_spec
+from task_spec import get_task_spec, get_target_transform, vertex_metrics
 
 
 METADATA_KEYS = [
     "event_index",
+    "E1",
+    "E2",
     "n_hit",
     "n_hits",
     "n_hits_original",
@@ -22,6 +24,9 @@ METADATA_KEYS = [
     "n_tracks",
     "id",
     "primary_origin",
+    "frame_vertex",
+    "hit_centroid",
+    "energy_centroid",
     "g4_total_deposited_energy",
     "g4_sensitive_volume_energy",
 ]
@@ -45,6 +50,8 @@ def _targets_from_batch(batch, task_spec):
     """Return targets with the dtype expected by the task loss."""
     if task_spec.is_classification:
         return batch.y.view(-1).long()
+    if task_spec.num_outputs > 1:
+        return batch.y.view(-1, task_spec.num_outputs).float()
     return batch.y.view(-1).float()
 
 
@@ -85,9 +92,12 @@ def train_epoch(
         batch = batch.to(device, non_blocking=True)
         targets = _targets_from_batch(batch, task_spec)
 
+        current_lr = optimizer.param_groups[0]["lr"]
         optimizer.zero_grad(set_to_none=True)
         with _autocast_context(device):
             outputs = model(batch)
+            if task_spec.is_regression and outputs.shape != targets.shape:
+                raise ValueError(f"Regression output/target shape mismatch: {outputs.shape} vs {targets.shape}.")
             loss = criterion(outputs, targets)
 
         if _scaler_enabled(scaler):
@@ -109,7 +119,6 @@ def train_epoch(
         if scheduler is not None and optimizer_was_stepped:
             scheduler.step()
 
-        current_lr = optimizer.param_groups[0]["lr"]
         lrs.append(current_lr)
 
         loss_reduced = reduce_value(loss.detach(), average=True)
@@ -144,9 +153,10 @@ def validate_epoch(
     val_loader,
     criterion,
     target_abs_max=845.0,
-    target_mode="minus_one_one",
+    target_mode=None,
     deduplicate_by_event=True,
     task="regression_z",
+    target_transform=None,
 ):
     """Run validation and gather scaled/raw predictions, labels, and metadata."""
     task_spec = get_task_spec(task)
@@ -174,15 +184,18 @@ def validate_epoch(
 
             with _autocast_context(device):
                 outputs = model(batch)
+                if task_spec.is_regression and outputs.shape != targets.shape:
+                    raise ValueError(f"Regression output/target shape mismatch: {outputs.shape} vs {targets.shape}.")
                 loss = criterion(outputs, targets)
 
             loss_reduced = reduce_value(loss.detach(), average=True)
             loss_list.append(loss_reduced.item())
 
-            output_list.append(gather_tensor(outputs.detach()))
+            output_list.append(gather_tensor(outputs.detach().float()))
             label_list.append(gather_tensor(targets.detach()))
             if hasattr(batch, "target_raw"):
-                raw_label_list.append(gather_tensor(batch.target_raw.view(-1).detach()))
+                raw_targets = batch.target_raw.view(-1, task_spec.num_outputs) if task_spec.is_regression and task_spec.num_outputs > 1 else batch.target_raw.view(-1)
+                raw_label_list.append(gather_tensor(raw_targets.detach()))
 
             for key in METADATA_KEYS:
                 if hasattr(batch, key):
@@ -204,25 +217,45 @@ def validate_epoch(
     if task_spec.is_classification:
         return _classification_result(loss_list, output_tensor, label_tensor, raw_label_tensor, metadata, task_spec)
 
-    raw_pred_tensor = inverse_scale_target_tensor(torch.from_numpy(output_tensor), target_abs_max, target_mode).numpy()
+    if not np.all(np.isfinite(output_tensor)) or not np.all(np.isfinite(raw_label_tensor)):
+        raise ValueError("Nonfinite regression predictions or targets found during validation.")
+    transform = target_transform or get_target_transform(task, target_mode, target_abs_max)
+    raw_pred_tensor = transform.inverse(output_tensor)
     raw_label_tensor = raw_label_tensor.astype(np.float32, copy=False)
     residual = raw_pred_tensor - raw_label_tensor
-    mae_mm = float(np.mean(np.abs(residual))) if residual.size else 0.0
-    rmse_mm = float(np.sqrt(np.mean(residual**2))) if residual.size else 0.0
+    mae = float(np.mean(np.abs(residual))) if residual.size else 0.0
+    rmse = float(np.sqrt(np.mean(residual**2))) if residual.size else 0.0
     scaled_residual = output_tensor - label_tensor
     scaled_mae = float(np.mean(np.abs(scaled_residual))) if scaled_residual.size else 0.0
 
-    return {
-        "loss": float(np.mean(loss_list)) if loss_list else 0.0,
+    # Recompute regression loss on unique events, including the partial last batch.
+    unique_loss = criterion(torch.as_tensor(output_tensor, device=device).float(),
+                            torch.as_tensor(label_tensor, device=device).float()).item()
+    result = {
+        "loss": float(unique_loss),
         "preds_scaled": output_tensor,
         "labels_scaled": label_tensor,
         "preds": raw_pred_tensor,
         "labels": raw_label_tensor,
-        "mae_mm": mae_mm,
-        "rmse_mm": rmse_mm,
+        "mae": mae,
+        "rmse": rmse,
+        "bias": float(np.mean(residual)),
+        "residual_std": float(np.std(residual)),
         "scaled_mae": scaled_mae,
         "metadata": metadata,
     }
+    if task == "regression_z":
+        result.update(mae_mm=mae, rmse_mm=rmse)
+    if task == "regression_xyz":
+        result.update(vertex_metrics(raw_label_tensor, raw_pred_tensor))
+    if task == "regression_A":
+        result["out_of_range_fraction"] = float(np.mean((raw_pred_tensor < 0) | (raw_pred_tensor > 1)))
+    if task == "regression_theta" and transform.mode == "angle":
+        result["out_of_range_fraction"] = float(np.mean((raw_pred_tensor < 0) | (raw_pred_tensor > 180)))
+    elif task == "regression_theta":
+        result["out_of_range_fraction"] = float(np.mean((raw_pred_tensor < -1) | (raw_pred_tensor > 1)))
+        result["cdf_out_of_range_fraction"] = float(np.mean((output_tensor < 0) | (output_tensor > 1)))
+    return result
 
 
 def _classification_result(loss_list, logits, labels, raw_labels, metadata, task_spec):
@@ -319,12 +352,6 @@ def _binary_roc_auc(labels, scores):
     return float((pos_rank_sum - n_pos * (n_pos + 1) / 2.0) / (n_pos * n_neg))
 
 
-def inverse_scale_target_tensor(value, target_abs_max, target_mode):
-    """Convert scaled model output back to primary_origin_z in mm."""
-    if target_mode == "minus_one_one":
-        return value * float(target_abs_max)
-    if target_mode == "zero_one":
-        return value * (2.0 * float(target_abs_max)) - float(target_abs_max)
-    if target_mode == "none":
-        return value
-    raise ValueError("target_mode must be one of: 'minus_one_one', 'zero_one', 'none'.")
+def inverse_scale_target_tensor(value, target_abs_max, target_mode, task="regression_z"):
+    """Backward-compatible wrapper around the shared target transform."""
+    return get_target_transform(task, target_mode, target_abs_max).inverse(value)
