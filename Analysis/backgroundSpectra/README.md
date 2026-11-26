@@ -19,6 +19,8 @@ The output is `background_Se82_Xe136.pdf` with four pages in this order:
 
 Every page uses counts per keV, kg of detector gas, and year. The full-range pages share a vertical scale, as do the signal-region pages. The signal-region pages use `E − Qββ` on the horizontal axis. Shading marks the integration window.
 
+The Se pages show both single-event and pile-up components. The Xe pages show the three single-event components. Set `Xe136.ShowPileup` to `1` to display the calculated Xe pile-up curves and their legend entries.
+
 ## Configure the inputs
 
 Edit `backgroundLevels.conf`. Each isotope lists its input spectra, detector mass, Qββ, ROI half width, resolution and coincidence time. `FwhmFraction` is the fractional FWHM at Qββ. `NaturalGammaIndex` is the target mean rate across the ROI, in counts/(keV kg yr). The terminal output gives the input index, applied scale and resulting annual count for each isotope.

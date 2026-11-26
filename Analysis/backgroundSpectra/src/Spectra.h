@@ -18,7 +18,8 @@ using Histogram = std::unique_ptr<TH1D>;
 inline constexpr std::array<std::pair<int, int>, 6> pileupPairs{{
     {0, 0}, {0, 1}, {0, 2}, {1, 1}, {1, 2}, {2, 2}
 }};
-inline constexpr std::size_t numComponents = 3 + pileupPairs.size();
+inline constexpr std::size_t numSingles = 3;
+inline constexpr std::size_t numComponents = numSingles + pileupPairs.size();
 
 struct Spectra {
   std::array<Histogram, numComponents> components;
@@ -163,7 +164,7 @@ inline double roiCounts(const TH1D& histogram, const DetectorConfig& detector)
 
 inline Spectra calculateSpectra(const DetectorConfig& detector)
 {
-  std::array<Histogram, 3> single{{
+  std::array<Histogram, numSingles> single{{
       makeHistogram(detector.key + "_2nu"),
       makeHistogram(detector.key + "_gamma"),
       makeHistogram(detector.key + "_co60")

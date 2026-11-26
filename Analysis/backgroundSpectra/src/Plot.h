@@ -37,6 +37,13 @@ inline constexpr double plotRight = 0.955;
 inline constexpr double plotBottom = 0.244;
 inline constexpr double plotTop = 0.838;
 inline constexpr int yMinExponent = -10;
+inline constexpr int axisTickSize = 22;
+inline constexpr int axisTitleSize = 25;
+
+inline std::size_t displayedComponents(const DetectorConfig& detector)
+{
+  return detector.showPileup ? numComponents : numSingles;
+}
 
 inline void note(double x, double y, const TString& value, int size,
                  int font = 43, int align = 12, double angle = 0.)
@@ -57,7 +64,8 @@ inline int sharedUpperExponent(const std::array<DetectorConfig, 2>& detectors,
   double maximum = 0;
   for (std::size_t index = 0; index < detectors.size(); ++index) {
     const auto& detector = detectors[index];
-    for (const auto& spectrum : results[index].components) {
+    for (std::size_t curve = 0; curve < displayedComponents(detector); ++curve) {
+      const auto& spectrum = results[index].components[curve];
       for (int bin = 1; bin <= energyBins; ++bin) {
         if (view == View::Roi &&
             std::abs(spectrum->GetBinCenter(bin) - detector.qbb) > zoomHalfWidthKeV)
@@ -105,7 +113,7 @@ inline void drawLogTicks(double xMin, double xMax, int maxExponent)
     if (!major) continue;
     const double position = plotBottom + (plotTop - plotBottom) *
                            (exponent - yMinExponent) / (maxExponent - yMinExponent);
-    note(plotLeft - 0.012, position, TString::Format("10^{%d}", exponent), 20, 43, 32);
+    note(plotLeft - 0.012, position, TString::Format("10^{%d}", exponent), axisTickSize, 43, 32);
   }
 }
 
@@ -131,7 +139,7 @@ inline void drawPage(TCanvas& canvas, const DetectorConfig& detector, const Spec
 
   auto& xaxis = *frame->GetXaxis();
   xaxis.SetLabelFont(43);
-  xaxis.SetLabelSize(21);
+  xaxis.SetLabelSize(axisTickSize);
   xaxis.SetTickLength(0.018);
   xaxis.SetNdivisions(zoom ? 408 : 508, false);
   frame->GetYaxis()->SetLabelSize(0);
@@ -140,14 +148,14 @@ inline void drawPage(TCanvas& canvas, const DetectorConfig& detector, const Spec
   drawRoiBand(detector, shift, yMin, yMax);
   drawLogTicks(xMin, xMax, maxExponent);
 
-  TLegend legend(plotLeft, 0.066, plotRight, 0.155);
+  TLegend legend(plotLeft, detector.showPileup ? 0.064 : 0.126, plotRight, 0.156);
   legend.SetBorderSize(0);
   legend.SetFillStyle(0);
-  legend.SetNColumns(3);
+  legend.SetNColumns(numSingles);
   legend.SetMargin(0.17);
   legend.SetTextFont(43);
-  legend.SetTextSize(18);
-  for (std::size_t index = 0; index < spectra.components.size(); ++index) {
+  legend.SetTextSize(23);
+  for (std::size_t index = 0; index < displayedComponents(detector); ++index) {
     const auto& rate = *spectra.components[index];
     const auto& style = curveStyles[index];
     auto display = makeHistogram(TString(rate.GetName()) + "_density", shift);
@@ -165,19 +173,16 @@ inline void drawPage(TCanvas& canvas, const DetectorConfig& detector, const Spec
   topBorder.DrawLine(xMin, yMax, xMax, yMax);
   legend.DrawClone();
 
-  note(0.045, (plotBottom + plotTop) / 2.,
-       "Background rate [counts keV^{-1} kg^{-1} yr^{-1}]", 24, 43, 22, 90.);
+  note(plotLeft - 0.060, (plotBottom + plotTop) / 2.,
+       "Background rate [counts keV^{-1} kg^{-1} yr^{-1}]", axisTitleSize, 43, 22, 90.);
   note((plotLeft + plotRight) / 2., 0.179, zoom ? "E - Q_{#beta#beta} [keV]" : "Energy [keV]",
-       23, 43, 22);
+       axisTitleSize, 43, 22);
   note(plotLeft, 0.950, detector.isotope + (zoom ? " background in the signal region"
                                                 : " background spectrum"), 32, 63);
-  note(plotLeft, 0.899, TString::Format("%g kg detector gas   |   Q_{#beta#beta} = %g keV"
-                                       "   |   %g%% FWHM at Q_{#beta#beta}",
-       detector.massKg, detector.qbb, detector.fwhmFraction * 100.), 19);
-  note(plotLeft, 0.028, TString::Format("Shaded ROI: %g-%g keV    |    Natural #gamma: %.6g counts yr^{-1} in ROI%s",
-       detector.roiLow(), detector.roiHigh(), spectra.annualRoiGamma,
-       detector.isSelenium() || !detector.twoNuFile.IsNull() ? "" : "    |    2#nu#beta#beta: Primakoff-Rosen"),
-       16);
+  note(plotLeft, 0.899, TString::Format("%g kg detector gas  |  Q_{#beta#beta} = %g keV (%g%% FWHM)"
+                                       "  |  Shaded ROI: %g-%g keV  |  Natural #gamma in ROI: %.6g counts yr^{-1}",
+       detector.massKg, detector.qbb, detector.fwhmFraction * 100.,
+       detector.roiLow(), detector.roiHigh(), spectra.annualRoiGamma), 18);
 }
 
 inline void writePdf(const TString& path, const std::array<DetectorConfig, 2>& detectors,

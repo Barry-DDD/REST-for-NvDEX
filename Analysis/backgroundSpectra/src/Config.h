@@ -29,6 +29,7 @@ struct DetectorConfig {
   double twoNuDecaysPerKgYear;
   double pileupWindowSeconds;
   double overlapVolumeFraction;
+  bool showPileup;
 
   double roiLow() const { return qbb - roiHalfWidth; }
   double roiHigh() const { return qbb + roiHalfWidth; }
@@ -68,7 +69,8 @@ inline DetectorConfig readDetector(const TEnv& settings, const TString& director
       filePath(selenium ? "TwoNuSpectrum" : "Decay0File"),
       number("QKeV"), number("MassKg"), number("RoiHalfWidthKeV"),
       number("FwhmFraction"), number("NaturalGammaIndex", true),
-      number("TwoNuDecaysPerKgYear"), number("PileupWindowSeconds", true), overlap
+      number("TwoNuDecaysPerKgYear"), number("PileupWindowSeconds", true), overlap,
+      settings.GetValue(key + ".ShowPileup", selenium ? 1 : 0) != 0
   };
   if (detector.roiLow() < 0 || detector.roiHigh() > energyBins ||
       detector.roiHalfWidth >= zoomHalfWidthKeV)
